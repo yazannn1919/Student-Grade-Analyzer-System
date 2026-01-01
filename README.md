@@ -1,0 +1,1 @@
+A small practice project written in x86 assembly (MASM) using the Irvine32 library. A simple student grading system that includes input validation, loop control, and structured program flow to gain a deeper understanding of low-level programming concepts.
