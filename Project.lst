@@ -1,4 +1,4 @@
-Microsoft (R) Macro Assembler Version 14.29.30159.0	    01/02/26 01:39:09
+Microsoft (R) Macro Assembler Version 14.29.30159.0	    01/02/26 01:54:04
 main.asm						     Page 1 - 1
 
 
@@ -226,16 +226,18 @@ main.asm						     Page 1 - 1
 
  000000EB						validHrs:
 
- 000000EB  E2 00			LOOP loopCourses
-main.asm(140) : error A2075:jump destination too far : by 29 byte(s)
+ 000000EB  E8 00000000 E			call Crlf
+
+ 000000F0  E2 00			LOOP loopCourses
+main.asm(142) : error A2075:jump destination too far : by 34 byte(s)
 
 
 					exit
- 000000ED  6A 00	   *	    push   +000000000h
- 000000EF  E8 00000000 E   *	    call   ExitProcess
- 000000F4			main ENDP
+ 000000F2  6A 00	   *	    push   +000000000h
+ 000000F4  E8 00000000 E   *	    call   ExitProcess
+ 000000F9			main ENDP
 				END main
-Microsoft (R) Macro Assembler Version 14.29.30159.0	    01/02/26 01:39:09
+Microsoft (R) Macro Assembler Version 14.29.30159.0	    01/02/26 01:54:04
 main.asm						     Symbols 2 - 1
 
 
@@ -330,7 +332,7 @@ Segments and Groups:
 FLAT . . . . . . . . . . . . . .	GROUP
 STACK  . . . . . . . . . . . . .	32 Bit	 00001000 Para	  Stack	  'STACK'	 
 _DATA  . . . . . . . . . . . . .	32 Bit	 0000017E Para	  Public  'DATA'	
-_TEXT  . . . . . . . . . . . . .	32 Bit	 000000F4 Para	  Public  'CODE'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 000000F9 Para	  Public  'CODE'	
 
 
 Procedures, parameters, and locals:
@@ -437,7 +439,7 @@ WriteStackFrame  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External
 WriteString  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteToFile  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteWindowsMsg  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
-main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 000000F4 Public STDCALL
+main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 000000F9 Public STDCALL
   reEnterNum . . . . . . . . . .	L Near	 00000019 _TEXT	
   invalidNum . . . . . . . . . .	L Near	 00000039 _TEXT	
   validNum . . . . . . . . . . .	L Near	 0000004A _TEXT	

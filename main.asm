@@ -17,8 +17,12 @@ studentName BYTE 20 + 1 DUP(0)
 N DWORD ?
 courseCode BYTE 5 + 1 DUP(0)
 courseCodeLen DWORD ?
+courseCodes BYTE 20 * (5 + 1) DUP(0)
 courseGrade DWORD ?
+courseGrades DWORD 20 DUP(0)
 courseHrs DWORD ?
+courseHrsArr DWORD 20 DUP(0)
+
 
 .code
 main PROC
@@ -58,9 +62,10 @@ main PROC
 
 	validNum:
 
-	;======================== courses input =========================
+	;======================== courses input loop ======================
 
 	MOV ECX, N
+	MOV ESI, 0
 	loopCourses:
 
 		; course code
@@ -69,10 +74,16 @@ main PROC
 			MOV EDX, OFFSET courseCodeMsg
 			call writeString
 
-			MOV EDX, OFFSET courseCode
+			; saving ecx
+			MOV EBX, ECX
 			MOV ECX, SIZEOF courseCode - 1
+
+			MOV EDX, OFFSET courseCode
 			call readString
 			MOV courseCodeLen, EAX ; length of input 
+
+			; restoring ecx
+			MOV ECX, EBX
 
 			; if(length == 5) -> validCode
 			MOV EAX, courseCodeLen
@@ -86,6 +97,7 @@ main PROC
 			JMP reEnterCode
 
 			validCode:
+			MOV [courseCodes + ESI * (5 + 1)], courseCode	
 
 		; grade
 			reEnterGrade:
@@ -111,6 +123,7 @@ main PROC
 			JMP reEnterGrade
 
 			validGrade:
+			MOV [courseGrades + ESI * 4], courseGrade
 
 		; hours
 			reEnterHrs:
@@ -136,7 +149,9 @@ main PROC
 			JMP reEnterHrs
 
 			validHrs:
+			MOV [courseHrsArr + ESI * 4], courseHrs
 
+		INC ESI
 		call Crlf
 
 	LOOP loopCourses
