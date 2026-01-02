@@ -23,6 +23,10 @@ courseGrades DWORD 20 DUP(0)
 courseHrs DWORD ?
 courseHrsArr DWORD 20 DUP(0)
 
+;----- Saved Registers -----
+savedECX DWORD ?
+curIdx DWORD ?
+
 
 .code
 main PROC
@@ -63,100 +67,117 @@ main PROC
 	validNum:
 
 	;======================== courses input loop ======================
-
 	MOV ECX, N
 	MOV ESI, 0
+
 	loopCourses:
+		MOV curIdx, ESI
 
-		; course code
-			reEnterCode:
+		call readCourseCode
+		call readGrade
+		call readHrs
 
-			MOV EDX, OFFSET courseCodeMsg
-			call writeString
-
-			; saving ecx
-			MOV EBX, ECX
-			MOV ECX, SIZEOF courseCode - 1
-
-			MOV EDX, OFFSET courseCode
-			call readString
-			MOV courseCodeLen, EAX ; length of input 
-
-			; restoring ecx
-			MOV ECX, EBX
-
-			; if(length == 5) -> validCode
-			MOV EAX, courseCodeLen
-			CMP EAX, 5
-			JE validCode
-
-			; invalid
-			MOV EDX, OFFSET courseCodeErr
-			call writeString
-			call Crlf 
-			JMP reEnterCode
-
-			validCode:
-			MOV [courseCodes + ESI * (5 + 1)], courseCode	
-
-		; grade
-			reEnterGrade:
-
-			MOV EDX, OFFSET courseGradeMsg
-			call writeString
-			call readInt
-
-			; if(grade >= 0 && grade <= 100)
-			CMP EAX, 0
-			JB invalidGrade
-			CMP EAX, 100
-			JA invalidGrade
-
-			; valid
-			MOV courseGrade, EAX
-			JMP validGrade
-
-			invalidGrade:
-			MOV EDX, OFFSET courseGradeErr
-			call writeString
-			call Crlf
-			JMP reEnterGrade
-
-			validGrade:
-			MOV [courseGrades + ESI * 4], courseGrade
-
-		; hours
-			reEnterHrs:
-
-			MOV EDX, OFFSET courseHrsMsg
-			call writeString
-			call readInt
-
-			; if(hrs >= 1 && hrs <= 4)
-			CMP EAX, 1
-			JB invalidHrs
-			CMP EAX, 4	
-			JA invalidHrs
-
-			; valid
-			MOV courseHrs, EAX
-			JMP validHrs
-
-			invalidHrs:
-			MOV EDX, OFFSET courseHrsErr
-			call writeString
-			call Crlf
-			JMP reEnterHrs
-
-			validHrs:
-			MOV [courseHrsArr + ESI * 4], courseHrs
-
-		INC ESI
+		inc ESI
 		call Crlf
 
 	LOOP loopCourses
 
-
 	exit
 main ENDP
+
+; PROCEDURES
+
+readCourseCode:
+	reEnterCode:
+
+	; prompt for course code
+		MOV EDX, OFFSET courseCodeMsg
+		call writeString
+
+	; save ecx for loop in main
+		MOV savedECX, ECX
+
+	; read course code
+		MOV ECX, SIZEOF courseCode - 1
+		MOV EDX, OFFSET courseCode
+		call readString
+		MOV courseCodeLen, EAX ; length of input 
+
+	; restore ecx
+		MOV ECX, savedECX
+
+	; if(length == 5) -> validCode
+		MOV EAX, courseCodeLen
+		CMP EAX, 5
+		JE validCode
+
+	; invalid
+		MOV EDX, OFFSET courseCodeErr
+		call writeString
+		call Crlf 
+		JMP reEnterCode
+
+	validCode:
+		MOV [courseCodes + curIdx * (5 + 1)], courseCode	
+
+ret
+
+readGrade:
+	reEnterGrade:
+
+	; prompt for grade and read
+		MOV EDX, OFFSET courseGradeMsg
+		call writeString
+		call readInt
+
+	; if(grade >= 0 && grade <= 100)
+		CMP EAX, 0
+		JB invalidGrade
+		CMP EAX, 100
+		JA invalidGrade
+
+	; valid
+		MOV courseGrade, EAX
+		JMP validGrade
+
+	invalidGrade:
+		MOV EDX, OFFSET courseGradeErr
+		call writeString
+		call Crlf
+		JMP reEnterGrade
+
+	validGrade:
+		MOV [courseGrades + curIdx * 4], courseGrade
+
+ret
+
+readHrs:
+	reEnterHrs:
+
+	; prompt for hours and read
+		MOV EDX, OFFSET courseHrsMsg
+		call writeString
+		call readInt
+
+	; if(hrs >= 1 && hrs <= 4)
+		CMP EAX, 1
+		JB invalidHrs
+		CMP EAX, 4	
+		JA invalidHrs
+
+	; valid
+		MOV courseHrs, EAX
+		MOV [courseHrsArr + curIdx * 4], courseHrs
+		JMP validHrs
+
+	invalidHrs:
+		MOV EDX, OFFSET courseHrsErr
+		call writeString
+		call Crlf
+		JMP reEnterHrs
+
+	validHrs:	
+
+ret
+
 END main
