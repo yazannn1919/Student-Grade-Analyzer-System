@@ -1,4 +1,4 @@
-Microsoft (R) Macro Assembler Version 14.29.30159.0	    01/02/26 14:56:50
+Microsoft (R) Macro Assembler Version 14.29.30159.0	    01/02/26 18:05:26
 main.asm						     Page 1 - 1
 
 
@@ -95,32 +95,66 @@ main.asm						     Page 1 - 1
 	   6E 20 31 20 61
 	   6E 64 20 34 2E
 	   00
+ 00000153 3D 3D 3D 3D 3D	systemTitle1 BYTE "===========================================", 0
+	   3D 3D 3D 3D 3D
+	   3D 3D 3D 3D 3D
+	   3D 3D 3D 3D 3D
+	   3D 3D 3D 3D 3D
+	   3D 3D 3D 3D 3D
+	   3D 3D 3D 3D 3D
+	   3D 3D 3D 3D 3D
+	   3D 3D 3D 00
+ 0000017F 20 20 20 20 20	systemTitle2 BYTE "       STUDENT GRADE ANALYZER SYSTEM       ", 0
+	   20 20 53 54 55
+	   44 45 4E 54 20
+	   47 52 41 44 45
+	   20 41 4E 41 4C
+	   59 5A 45 52 20
+	   53 59 53 54 45
+	   4D 20 20 20 20
+	   20 20 20 00
+ 000001AB 3D 3D 3D 3D 3D	systemTitle3 BYTE "===========================================", 0
+	   3D 3D 3D 3D 3D
+	   3D 3D 3D 3D 3D
+	   3D 3D 3D 3D 3D
+	   3D 3D 3D 3D 3D
+	   3D 3D 3D 3D 3D
+	   3D 3D 3D 3D 3D
+	   3D 3D 3D 3D 3D
+	   3D 3D 3D 00
 
 
 				;----- Variables -----
- 00000153  00000015 [		studentName BYTE 20 + 1 DUP(0)
+ 000001D7  00000015 [		studentName BYTE 20 + 1 DUP(0)
 	    00
 	   ]
- 00000168 00000000		N DWORD ?
- 0000016C  00000006 [		courseCode BYTE 5 + 1 DUP(0)
+ 000001EC 00000000		N DWORD ?
+ 000001F0  00000006 [		courseCode BYTE 5 + 1 DUP(0)
 	    00
 	   ]
- 00000172 00000000		courseCodeLen DWORD ?
- 00000176  00000078 [		courseCodes BYTE 20 * (5 + 1) DUP(0)
+ 000001F6 00000000		courseCodeLen DWORD ?
+ 000001FA  00000078 [		courseCodes BYTE 20 * (5 + 1) DUP(0)
 	    00
 	   ]
- 000001EE 00000000		courseGrade DWORD ?
- 000001F2  00000014 [		courseGrades DWORD 20 DUP(0)
+ 00000272 00000000		courseGrade DWORD ?
+ 00000276  00000014 [		courseGrades DWORD 20 DUP(0)
 	    00000000
 	   ]
- 00000242 00000000		courseHrs DWORD ?
- 00000246  00000014 [		courseHrsArr DWORD 20 DUP(0)
+ 000002C6 00000000		courseHrs DWORD ?
+ 000002CA  00000014 [		courseHrsArr DWORD 20 DUP(0)
 	    00000000
 	   ]
+ 0000031A  00000014 [		gradeLetters BYTE 20 DUP(0)
+	    00
+	   ]
+ 0000032E  00000014 [		gradePoints REAL4 20 DUP(0.0)
+	    00000000
+	   ]
+ 0000037E 00000000		currGrade DWORD ?
 
 				;----- Saved Registers -----
- 00000296 00000000		savedECX DWORD ?
- 0000029A 00000000		curIdx DWORD ?
+ 00000382 00000000		savedECX DWORD ?
+ 00000386 00000000		curIdx DWORD ?
 
 
  00000000			.code
@@ -130,7 +164,7 @@ main.asm						     Page 1 - 1
  00000000  BA 00000000 R		MOV EDX, OFFSET nameMsg
  00000005  E8 00000000 E		call writeString
 
- 0000000A  BA 00000153 R		MOV EDX, OFFSET studentName
+ 0000000A  BA 000001D7 R		MOV EDX, OFFSET studentName
  0000000F  B9 00000014			MOV ECX, SIZEOF studentName - 1
  00000014  E8 00000000 E		call readString
 
@@ -150,7 +184,7 @@ main.asm						     Page 1 - 1
  00000030  77 07			JA invalidNum
 
 					; valid
- 00000032  A3 00000168 R		MOV N, EAX
+ 00000032  A3 000001EC R		MOV N, EAX
  00000037  EB 11			JMP validNum
 
  00000039				invalidNum:
@@ -162,124 +196,228 @@ main.asm						     Page 1 - 1
  0000004A				validNum:
 
 					;======================== courses input loop ======================
- 0000004A  8B 0D 00000168 R		MOV ECX, N
+ 0000004A  8B 0D 000001EC R		MOV ECX, N
  00000050  BE 00000000			MOV ESI, 0
 
  00000055				loopCourses:
- 00000055  89 35 0000029A R			MOV curIdx, ESI
+ 00000055  89 35 00000386 R			MOV curIdx, ESI
 
- 0000005B  E8 00000019				call readCourseCode
- 00000060  E8 00000065				call readGrade
- 00000065  E8 0000009D				call readHrs
+						;call readCourseCode
+						;call readGrade
+						;call readHrs
+						;call decideLetters
 
- 0000006A  46					inc ESI
- 0000006B  E8 00000000 E			call Crlf
+ 0000005B  46					inc ESI
+ 0000005C  E8 00000000 E			call Crlf
 
- 00000070  E2 E3			LOOP loopCourses
+ 00000061  E2 F2			LOOP loopCourses
+
+
+					;======================== output title =============================
+
+ 00000063  BA 00000153 R		MOV EDX, OFFSET systemTitle1
+ 00000068  E8 00000000 E		call writeString
+ 0000006D  E8 00000000 E		call Crlf
+ 00000072  BA 0000017F R		MOV EDX, OFFSET systemTitle2
+ 00000077  E8 00000000 E		call writeString
+ 0000007C  E8 00000000 E		call Crlf
+ 00000081  BA 000001AB R		MOV EDX, OFFSET systemTitle3
+ 00000086  E8 00000000 E		call writeString
+ 0000008B  E8 00000000 E		call Crlf
+
+					;======================== process ldk fkdmfkda =============================
+
+
 
 					exit
- 00000072  6A 00	   *	    push   +000000000h
- 00000074  E8 00000000 E   *	    call   ExitProcess
- 00000079			main ENDP
+ 00000090  6A 00	   *	    push   +000000000h
+ 00000092  E8 00000000 E   *	    call   ExitProcess
+ 00000097			main ENDP
 
 				; PROCEDURES
 
- 00000079			readCourseCode:
- 00000079				reEnterCode:
+				;======================== course code =============================
+ 00000097			readCourseCode PROC,
+main.asm(115) : error A2195:parameter or local cannot have void type
+					reEnterCode:
 
 					; prompt for course code
- 00000079  BA 0000006E R			MOV EDX, OFFSET courseCodeMsg
- 0000007E  E8 00000000 E			call writeString
+ 00000097  55		   *	    push   ebp
+ 00000098  8B EC	   *	    mov    ebp, esp
+ 0000009A  BA 0000006E R			MOV EDX, OFFSET courseCodeMsg
+ 0000009F  E8 00000000 E			call writeString
 
 					; save ecx for loop in main
- 00000083  89 0D 00000296 R			MOV savedECX, ECX
+ 000000A4  89 0D 00000382 R			MOV savedECX, ECX
 
 					; read course code
- 00000089  B9 00000005				MOV ECX, SIZEOF courseCode - 1
- 0000008E  BA 0000016C R			MOV EDX, OFFSET courseCode
- 00000093  E8 00000000 E			call readString
- 00000098  A3 00000172 R			MOV courseCodeLen, EAX ; length of input 
+ 000000AA  B9 00000005				MOV ECX, SIZEOF courseCode - 1
+ 000000AF  BA 000001F0 R			MOV EDX, OFFSET courseCode
+ 000000B4  E8 00000000 E			call readString
+ 000000B9  A3 000001F6 R			MOV courseCodeLen, EAX ; length of input 
 
 					; restore ecx
- 0000009D  8B 0D 00000296 R			MOV ECX, savedECX
+ 000000BE  8B 0D 00000382 R			MOV ECX, savedECX
 
 					; if(length == 5) -> validCode
- 000000A3  A1 00000172 R			MOV EAX, courseCodeLen
- 000000A8  83 F8 05				CMP EAX, 5
- 000000AB  74 11				JE validCode
+ 000000C4  A1 000001F6 R			MOV EAX, courseCodeLen
+ 000000C9  83 F8 05				CMP EAX, 5
+ 000000CC  74 1A				JE validCode
 
 					; invalid
- 000000AD  BA 0000007E R			MOV EDX, OFFSET courseCodeErr
- 000000B2  E8 00000000 E			call writeString
- 000000B7  E8 00000000 E			call Crlf 
- 000000BC  EB BB				JMP reEnterCode
+ 000000CE  BA 0000007E R			MOV EDX, OFFSET courseCodeErr
+ 000000D3  E8 00000000 E			call writeString
+ 000000D8  E8 00000000 E			call Crlf 
+						JMP reEnterCode
+main.asm(143) : error A2023:instruction operand must have size
 
- 000000BE				validCode:
-						MOV [courseCodes + ESI * (5 + 1)], courseCode	
-main.asm(121) : error A2083:invalid scale value
+ 000000E8				validCode:
+						;MOV [courseCodes + curIdx * (5 + 1)], courseCode	
 
- 000000BE  C3			ret
+				ret
+ 000000E8  C9		   *	    leave  
+ 000000E9  C3		   *	    ret    00000h
+ 000000EA			readCourseCode ENDP
 
- 000000CA			readGrade:
- 000000CA				reEnterGrade:
+				;======================== read grade =============================
+ 000000EA			readGrade PROC,
+main.asm(152) : error A2195:parameter or local cannot have void type
+					reEnterGrade:
 
 					; prompt for grade and read
- 000000CA  BA 000000B0 R			MOV EDX, OFFSET courseGradeMsg
- 000000CF  E8 00000000 E			call writeString
- 000000D4  E8 00000000 E			call readInt
+ 000000EA  55		   *	    push   ebp
+ 000000EB  8B EC	   *	    mov    ebp, esp
+ 000000ED  BA 000000B0 R			MOV EDX, OFFSET courseGradeMsg
+ 000000F2  E8 00000000 E			call writeString
+ 000000F7  E8 00000000 E			call readInt
 
 					; if(grade >= 0 && grade <= 100)
- 000000D9  83 F8 00				CMP EAX, 0
- 000000DC  72 0C				JB invalidGrade
- 000000DE  83 F8 64				CMP EAX, 100
- 000000E1  77 07				JA invalidGrade
+ 000000FC  83 F8 00				CMP EAX, 0
+ 000000FF  72 0C				JB invalidGrade
+ 00000101  83 F8 64				CMP EAX, 100
+ 00000104  77 07				JA invalidGrade
 
 					; valid
- 000000E3  A3 000001EE R			MOV courseGrade, EAX
- 000000E8  EB 11				JMP validGrade
+ 00000106  A3 00000272 R			MOV courseGrade, EAX
+ 0000010B  EB 1A				JMP validGrade
 
- 000000EA				invalidGrade:
- 000000EA  BA 000000CA R			MOV EDX, OFFSET courseGradeErr
- 000000EF  E8 00000000 E			call writeString
- 000000F4  E8 00000000 E			call Crlf
- 000000F9  EB CF				JMP reEnterGrade
+ 0000010D				invalidGrade:
+ 0000010D  BA 000000CA R			MOV EDX, OFFSET courseGradeErr
+ 00000112  E8 00000000 E			call writeString
+ 00000117  E8 00000000 E			call Crlf
+						JMP reEnterGrade
+main.asm(174) : error A2023:instruction operand must have size
 
- 000000FB				validGrade:
-						MOV [courseGrades + curIdx * 4], courseGrade
-main.asm(150) : error A2026:constant expected
+ 00000127				validGrade:
+						;MOV [courseGrades + curIdx * 4], courseGrade
 
- 000000FB  C3			ret
+				ret
+ 00000127  C9		   *	    leave  
+ 00000128  C3		   *	    ret    00000h
+ 00000129			readGrade ENDP
 
- 00000107			readHrs:
- 00000107				reEnterHrs:
+				;======================== read hours =============================
+ 00000129			readHrs PROC,
+main.asm(183) : error A2195:parameter or local cannot have void type
+					reEnterHrs:
 
 					; prompt for hours and read
- 00000107  BA 00000104 R			MOV EDX, OFFSET courseHrsMsg
- 0000010C  E8 00000000 E			call writeString
- 00000111  E8 00000000 E			call readInt
+ 00000129  55		   *	    push   ebp
+ 0000012A  8B EC	   *	    mov    ebp, esp
+ 0000012C  BA 00000104 R			MOV EDX, OFFSET courseHrsMsg
+ 00000131  E8 00000000 E			call writeString
+ 00000136  E8 00000000 E			call readInt
 
 					; if(hrs >= 1 && hrs <= 4)
- 00000116  83 F8 01				CMP EAX, 1
- 00000119  72 15				JB invalidHrs
- 0000011B  83 F8 04				CMP EAX, 4	
- 0000011E  77 10				JA invalidHrs
+ 0000013B  83 F8 01				CMP EAX, 1
+ 0000013E  72 0C				JB invalidHrs
+ 00000140  83 F8 04				CMP EAX, 4	
+ 00000143  77 07				JA invalidHrs
 
 					; valid
- 00000120  A3 00000242 R			MOV courseHrs, EAX
-						MOV [courseHrsArr + curIdx * 4], courseHrs
-main.asm(170) : error A2026:constant expected
+ 00000145  A3 000002C6 R			MOV courseHrs, EAX
+						;MOV [courseHrsArr + curIdx * 4], courseHrs
+ 0000014A  EB 1A				JMP validHrs
 
- 00000130				invalidHrs:
- 00000130  BA 0000011B R			MOV EDX, OFFSET courseHrsErr
- 00000135  E8 00000000 E			call writeString
- 0000013A  E8 00000000 E			call Crlf
- 0000013F  EB C6				JMP reEnterHrs
+ 0000014C				invalidHrs:
+ 0000014C  BA 0000011B R			MOV EDX, OFFSET courseHrsErr
+ 00000151  E8 00000000 E			call writeString
+ 00000156  E8 00000000 E			call Crlf
+						JMP reEnterHrs
+main.asm(206) : error A2023:instruction operand must have size
 
+ 00000166				validHrs:	
 
- 00000141  C3			ret
+				ret
+ 00000166  C9		   *	    leave  
+ 00000167  C3		   *	    ret    00000h
+ 00000168			readHrs ENDP
+
+				;======================== assign letters and points =============================
+ 00000168			decideLetters PROC,
+
+					MOV EBX, [courseGrades + curIdx * 4]
+main.asm(216) : error A2026:constant expected
+					; if(grade >= 90) -> A
+					; if(grade >= 80 && grade < 90) -> B
+					; if(grade >= 70 && grade < 80) -> C
+					; if(grade >= 60 && grade < 70) -> D
+					; if(grade < 60) -> F
+
+					; try A:
+ 00000168  83 FB 5A			CMP EBX, 90
+ 0000016B  72 1A			JB checkB
+ 0000016D  B0 41			MOV AL, 'A'
+					MOV [gradePoints + curIdx * 4], 4.0
+main.asm(227) : error A2026:constant expected
+ 0000016F  EB 5F			JMP storeLetter
+
+					; try B:
+ 00000187				checkB:
+ 00000187  83 FB 50			CMP EBX, 80
+ 0000018A  72 0F			JB checkC
+ 0000018C  B0 42			MOV AL, 'B'
+					MOV [gradePoints + curIdx * 4], 3.0
+main.asm(235) : error A2026:constant expected
+ 0000018E  EB 40			JMP storeLetter
+
+					; try C:
+ 0000019B				checkC:
+ 0000019B  83 FB 46			CMP EBX, 70
+ 0000019E  72 0F			JB checkD
+ 000001A0  B0 43			MOV AL, 'C'
+					MOV [gradePoints + curIdx * 4], 2.0
+main.asm(243) : error A2026:constant expected
+ 000001A2  EB 2C			JMP storeLetter
+
+					; try D:
+ 000001AF				checkD:
+ 000001AF  83 FB 3C			CMP EBX, 60
+ 000001B2  72 0F			JB storeF
+ 000001B4  B0 44			MOV AL, 'D'
+					MOV [gradePoints + curIdx * 4], 1.0
+main.asm(251) : error A2026:constant expected
+ 000001B6  EB 18			JMP storeLetter
+
+					; store F:
+ 000001C3				storeF:
+					MOV [gradePoints + curIdx * 4], 0.0
+main.asm(256) : error A2026:constant expected
+ 000001C3  B0 46			MOV AL, 'F'
+
+ 000001D0				storeLetter:
+					MOV [gradeLetters + curIdx * 4], AL
+main.asm(260) : error A2026:constant expected
+
+ 000001D0  C3			ret
+ 000001D1			decideLetters ENDP
+
+				;======================== assign letters =============================
+					
+
 
 				END main
-Microsoft (R) Macro Assembler Version 14.29.30159.0	    01/02/26 14:56:50
+Microsoft (R) Macro Assembler Version 14.29.30159.0	    01/02/26 18:05:26
 main.asm						     Symbols 2 - 1
 
 
@@ -373,8 +511,8 @@ Segments and Groups:
 
 FLAT . . . . . . . . . . . . . .	GROUP
 STACK  . . . . . . . . . . . . .	32 Bit	 00001000 Para	  Stack	  'STACK'	 
-_DATA  . . . . . . . . . . . . .	32 Bit	 0000029E Para	  Public  'DATA'	
-_TEXT  . . . . . . . . . . . . .	32 Bit	 00000142 Para	  Public  'CODE'	
+_DATA  . . . . . . . . . . . . .	32 Bit	 0000038A Para	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 000001DC Para	  Public  'CODE'	
 
 
 Procedures, parameters, and locals:
@@ -481,12 +619,29 @@ WriteStackFrame  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External
 WriteString  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteToFile  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteWindowsMsg  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
-main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 00000079 Public STDCALL
+decideLetters  . . . . . . . . .	P Near	 00000168 _TEXT	Length= 00000074 Public STDCALL
+  checkB . . . . . . . . . . . .	L Near	 00000187 _TEXT	
+  checkC . . . . . . . . . . . .	L Near	 0000019B _TEXT	
+  checkD . . . . . . . . . . . .	L Near	 000001AF _TEXT	
+  storeF . . . . . . . . . . . .	L Near	 000001C3 _TEXT	
+  storeLetter  . . . . . . . . .	L Near	 000001D0 _TEXT	
+main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 00000097 Public STDCALL
   reEnterNum . . . . . . . . . .	L Near	 00000019 _TEXT	
   invalidNum . . . . . . . . . .	L Near	 00000039 _TEXT	
   validNum . . . . . . . . . . .	L Near	 0000004A _TEXT	
   loopCourses  . . . . . . . . .	L Near	 00000055 _TEXT	
 printf . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
+readCourseCode . . . . . . . . .	P Near	 00000097 _TEXT	Length= 00000053 Public STDCALL
+  reEnterCode  . . . . . . . . .		 bp + 00000008
+  validCode  . . . . . . . . . .	L Near	 000000E8 _TEXT	
+readGrade  . . . . . . . . . . .	P Near	 000000EA _TEXT	Length= 0000003F Public STDCALL
+  reEnterGrade . . . . . . . . .		 bp + 00000008
+  invalidGrade . . . . . . . . .	L Near	 0000010D _TEXT	
+  validGrade . . . . . . . . . .	L Near	 00000127 _TEXT	
+readHrs  . . . . . . . . . . . .	P Near	 00000129 _TEXT	Length= 0000003F Public STDCALL
+  reEnterHrs . . . . . . . . . .		 bp + 00000008
+  invalidHrs . . . . . . . . . .	L Near	 0000014C _TEXT	
+  validHrs . . . . . . . . . . .	L Near	 00000166 _TEXT	
 scanf  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
 wsprintfA  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
 
@@ -606,7 +761,7 @@ MOUSE_EVENT  . . . . . . . . . .	Number	 00000002h
 MessageBox . . . . . . . . . . .	Text   	 MessageBoxA
 NULL . . . . . . . . . . . . . .	Number	 00000000h   
 NUMLOCK_ON . . . . . . . . . . .	Number	 00000020h   
-N  . . . . . . . . . . . . . . .	DWord	 00000168 _DATA	
+N  . . . . . . . . . . . . . . .	DWord	 000001EC _DATA	
 OPEN_ALWAYS  . . . . . . . . . .	Number	 00000004h   
 OPEN_EXISTING  . . . . . . . . .	Number	 00000003h   
 PeekConsoleInput . . . . . . . .	Text   	 PeekConsoleInputA
@@ -709,27 +864,28 @@ black  . . . . . . . . . . . . .	Number	 00000000h
 blue . . . . . . . . . . . . . .	Number	 00000001h   
 brown  . . . . . . . . . . . . .	Number	 00000006h   
 courseCodeErr  . . . . . . . . .	Byte	 0000007E _DATA	
-courseCodeLen  . . . . . . . . .	DWord	 00000172 _DATA	
+courseCodeLen  . . . . . . . . .	DWord	 000001F6 _DATA	
 courseCodeMsg  . . . . . . . . .	Byte	 0000006E _DATA	
-courseCodes  . . . . . . . . . .	Byte	 00000176 _DATA	
-courseCode . . . . . . . . . . .	Byte	 0000016C _DATA	
+courseCodes  . . . . . . . . . .	Byte	 000001FA _DATA	
+courseCode . . . . . . . . . . .	Byte	 000001F0 _DATA	
 courseGradeErr . . . . . . . . .	Byte	 000000CA _DATA	
 courseGradeMsg . . . . . . . . .	Byte	 000000B0 _DATA	
-courseGrades . . . . . . . . . .	DWord	 000001F2 _DATA	
-courseGrade  . . . . . . . . . .	DWord	 000001EE _DATA	
-courseHrsArr . . . . . . . . . .	DWord	 00000246 _DATA	
+courseGrades . . . . . . . . . .	DWord	 00000276 _DATA	
+courseGrade  . . . . . . . . . .	DWord	 00000272 _DATA	
+courseHrsArr . . . . . . . . . .	DWord	 000002CA _DATA	
 courseHrsErr . . . . . . . . . .	Byte	 0000011B _DATA	
 courseHrsMsg . . . . . . . . . .	Byte	 00000104 _DATA	
-courseHrs  . . . . . . . . . . .	DWord	 00000242 _DATA	
+courseHrs  . . . . . . . . . . .	DWord	 000002C6 _DATA	
 courseNumErr . . . . . . . . . .	Byte	 00000036 _DATA	
 courseNumMsg . . . . . . . . . .	Byte	 00000015 _DATA	
-curIdx . . . . . . . . . . . . .	DWord	 0000029A _DATA	
+curIdx . . . . . . . . . . . . .	DWord	 00000386 _DATA	
+currGrade  . . . . . . . . . . .	DWord	 0000037E _DATA	
 cyan . . . . . . . . . . . . . .	Number	 00000003h   
 exit . . . . . . . . . . . . . .	Text   	 INVOKE ExitProcess,0
+gradeLetters . . . . . . . . . .	Byte	 0000031A _DATA	
+gradePoints  . . . . . . . . . .	DWord	 0000032E _DATA	
 gray . . . . . . . . . . . . . .	Number	 00000008h   
 green  . . . . . . . . . . . . .	Number	 00000002h   
-invalidGrade . . . . . . . . . .	L Near	 000000EA _TEXT	
-invalidHrs . . . . . . . . . . .	L Near	 00000130 _TEXT	
 lightBlue  . . . . . . . . . . .	Number	 00000009h   
 lightCyan  . . . . . . . . . . .	Number	 0000000Bh   
 lightGray  . . . . . . . . . . .	Number	 00000007h   
@@ -738,20 +894,15 @@ lightMagenta . . . . . . . . . .	Number	 0000000Dh
 lightRed . . . . . . . . . . . .	Number	 0000000Ch   
 magenta  . . . . . . . . . . . .	Number	 00000005h   
 nameMsg  . . . . . . . . . . . .	Byte	 00000000 _DATA	
-reEnterCode  . . . . . . . . . .	L Near	 00000079 _TEXT	
-reEnterGrade . . . . . . . . . .	L Near	 000000CA _TEXT	
-reEnterHrs . . . . . . . . . . .	L Near	 00000107 _TEXT	
-readCourseCode . . . . . . . . .	L Near	 00000079 _TEXT	
-readGrade  . . . . . . . . . . .	L Near	 000000CA _TEXT	
-readHrs  . . . . . . . . . . . .	L Near	 00000107 _TEXT	
 red  . . . . . . . . . . . . . .	Number	 00000004h   
-savedECX . . . . . . . . . . . .	DWord	 00000296 _DATA	
-studentName  . . . . . . . . . .	Byte	 00000153 _DATA	
-validCode  . . . . . . . . . . .	L Near	 000000BE _TEXT	
-validGrade . . . . . . . . . . .	L Near	 000000FB _TEXT	
+savedECX . . . . . . . . . . . .	DWord	 00000382 _DATA	
+studentName  . . . . . . . . . .	Byte	 000001D7 _DATA	
+systemTitle1 . . . . . . . . . .	Byte	 00000153 _DATA	
+systemTitle2 . . . . . . . . . .	Byte	 0000017F _DATA	
+systemTitle3 . . . . . . . . . .	Byte	 000001AB _DATA	
 white  . . . . . . . . . . . . .	Number	 0000000Fh   
 wsprintf . . . . . . . . . . . .	Text   	 wsprintfA
 yellow . . . . . . . . . . . . .	Number	 0000000Eh   
 
 	   0 Warnings
-	   3 Errors
+	   13 Errors

@@ -10,6 +10,9 @@ courseGradeMsg BYTE "  Numeroc grade (0-100): ", 0
 courseGradeErr BYTE "  Invalid grade. Please enter a number between 0 and 100.", 0
 courseHrsMsg BYTE "  Credit hours (1-4): ", 0
 courseHrsErr BYTE "  Invalid hours. Please enter a number between 1 and 4.", 0
+systemTitle1 BYTE "===========================================", 0
+systemTitle2 BYTE "       STUDENT GRADE ANALYZER SYSTEM       ", 0
+systemTitle3 BYTE "===========================================", 0
 
 
 ;----- Variables -----
@@ -22,6 +25,9 @@ courseGrade DWORD ?
 courseGrades DWORD 20 DUP(0)
 courseHrs DWORD ?
 courseHrsArr DWORD 20 DUP(0)
+gradeLetters BYTE 20 DUP(0)
+gradePoints REAL4 20 DUP(0.0)
+currGrade DWORD ?
 
 ;----- Saved Registers -----
 savedECX DWORD ?
@@ -73,21 +79,40 @@ main PROC
 	loopCourses:
 		MOV curIdx, ESI
 
-		call readCourseCode
-		call readGrade
-		call readHrs
+		;call readCourseCode
+		;call readGrade
+		;call readHrs
+		;call decideLetters
 
 		inc ESI
 		call Crlf
 
 	LOOP loopCourses
 
+
+	;======================== output title =============================
+
+	MOV EDX, OFFSET systemTitle1
+	call writeString
+	call Crlf
+	MOV EDX, OFFSET systemTitle2
+	call writeString
+	call Crlf
+	MOV EDX, OFFSET systemTitle3
+	call writeString
+	call Crlf
+
+	;======================== process ldk fkdmfkda =============================
+
+
+
 	exit
 main ENDP
 
 ; PROCEDURES
 
-readCourseCode:
+;======================== course code =============================
+readCourseCode PROC,
 	reEnterCode:
 
 	; prompt for course code
@@ -118,11 +143,13 @@ readCourseCode:
 		JMP reEnterCode
 
 	validCode:
-		MOV [courseCodes + curIdx * (5 + 1)], courseCode	
+		;MOV [courseCodes + curIdx * (5 + 1)], courseCode	
 
 ret
+readCourseCode ENDP
 
-readGrade:
+;======================== read grade =============================
+readGrade PROC,
 	reEnterGrade:
 
 	; prompt for grade and read
@@ -147,11 +174,13 @@ readGrade:
 		JMP reEnterGrade
 
 	validGrade:
-		MOV [courseGrades + curIdx * 4], courseGrade
+		;MOV [courseGrades + curIdx * 4], courseGrade
 
 ret
+readGrade ENDP
 
-readHrs:
+;======================== read hours =============================
+readHrs PROC,
 	reEnterHrs:
 
 	; prompt for hours and read
@@ -167,7 +196,7 @@ readHrs:
 
 	; valid
 		MOV courseHrs, EAX
-		MOV [courseHrsArr + curIdx * 4], courseHrs
+		;MOV [courseHrsArr + curIdx * 4], courseHrs
 		JMP validHrs
 
 	invalidHrs:
@@ -179,5 +208,62 @@ readHrs:
 	validHrs:	
 
 ret
+readHrs ENDP
+
+;======================== assign letters and points =============================
+decideLetters PROC,
+
+	MOV EBX, [courseGrades + curIdx * 4]
+	; if(grade >= 90) -> A
+	; if(grade >= 80 && grade < 90) -> B
+	; if(grade >= 70 && grade < 80) -> C
+	; if(grade >= 60 && grade < 70) -> D
+	; if(grade < 60) -> F
+
+	; try A:
+	CMP EBX, 90
+	JB checkB
+	MOV AL, 'A'
+	MOV [gradePoints + curIdx * 4], 4.0
+	JMP storeLetter
+
+	; try B:
+	checkB:
+	CMP EBX, 80
+	JB checkC
+	MOV AL, 'B'
+	MOV [gradePoints + curIdx * 4], 3.0
+	JMP storeLetter
+
+	; try C:
+	checkC:
+	CMP EBX, 70
+	JB checkD
+	MOV AL, 'C'
+	MOV [gradePoints + curIdx * 4], 2.0
+	JMP storeLetter
+
+	; try D:
+	checkD:
+	CMP EBX, 60
+	JB storeF
+	MOV AL, 'D'
+	MOV [gradePoints + curIdx * 4], 1.0
+	JMP storeLetter
+
+	; store F:
+	storeF:
+	MOV [gradePoints + curIdx * 4], 0.0
+	MOV AL, 'F'
+
+	storeLetter:
+	MOV [gradeLetters + curIdx * 4], AL
+
+ret
+decideLetters ENDP
+
+;======================== assign letters =============================
+	
+
 
 END main
