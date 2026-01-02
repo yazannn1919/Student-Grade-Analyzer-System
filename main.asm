@@ -1,269 +1,236 @@
 INCLUDE Irvine32.inc
 .data
-; ----- Prompts -----
-nameMsg BYTE "Enter student name: ", 0
-courseNumMsg BYTE "Enter number of courses (1-20): ", 0
-courseNumErr BYTE "Invalid number. Please enter a number between 1 and 20.", 0
-courseCodeMsg BYTE "  Course code: ", 0
-courseCodeErr BYTE "  Invalid course code. Please enter 5 characters.", 0
-courseGradeMsg BYTE "  Numeroc grade (0-100): ", 0
-courseGradeErr BYTE "  Invalid grade. Please enter a number between 0 and 100.", 0
-courseHrsMsg BYTE "  Credit hours (1-4): ", 0
-courseHrsErr BYTE "  Invalid hours. Please enter a number between 1 and 4.", 0
-systemTitle1 BYTE "===========================================", 0
-systemTitle2 BYTE "       STUDENT GRADE ANALYZER SYSTEM       ", 0
-systemTitle3 BYTE "===========================================", 0
 
+	; =================================== student name ===================================
+	studentMsg BYTE "Enter student name: ", 0
+	studentName BYTE 21 DUP(0) ; +1 for null terminator
 
-;----- Variables -----
-studentName BYTE 20 + 1 DUP(0)
-N DWORD ?
-courseCode BYTE 5 + 1 DUP(0)
-courseCodeLen DWORD ?
-courseCodes BYTE 20 * (5 + 1) DUP(0)
-courseGrade DWORD ?
-courseGrades DWORD 20 DUP(0)
-courseHrs DWORD ?
-courseHrsArr DWORD 20 DUP(0)
-gradeLetters BYTE 20 DUP(0)
-gradePoints REAL4 20 DUP(0.0)
-currGrade DWORD ?
+	; =================================== number of courses ===================================
+	numberOfCoursesMsg BYTE "Enter number of courses (1-20): ", 0
+	numberOfCoursesErr BYTE "The number of courses should be between 1 and 20", 0
+	numberOfCourses DWORD ?
+	valid BYTE ?
 
-;----- Saved Registers -----
-savedECX DWORD ?
-curIdx DWORD ?
+	; =================================== course data ===================================
+	currentTitle1 BYTE "Course ", 0
+	currentTitle2 BYTE ": ", 0
 
+	idx DWORD ?
+	tempECX DWORD ?
+
+	courseCodeMsg BYTE "  Enter course code: ", 0
+	courseCodeErr BYTE "  Course code must be 5 characters", 0
+	courseCodeBuffer BYTE 21 DUP(0) ; +1 for null terminator, extra size to avoid overflow
+	courseCodeLen DWORD ?
+	courseCodeArr BYTE 20 DUP(6 DUP(0)) ; array for max 20 course codes including null terminators
+
+	courseGradeMsg BYTE "  Enter course grade (0-100): ", 0
+	courseGrade DWORD ?
+	courseGradeErr BYTE "  Grade must be between 0 and 100", 0
+	courseGradeArr DWORD 20 DUP(?) 
+
+	courseHrsMsg BYTE "  Enter course hours (1-4): ", 0
+	courseHrs DWORD ?
+	courseHrsErr BYTE "  Course hours must be between 1 and 4", 0
+	courseHrsArr DWORD 20 DUP(?)
 
 .code
-main PROC
-	;=============================== users name =============================
+; MAIN
+	main PROC
+		; =================================== student name ===================================
+			call getStudentInfo
 
-	MOV EDX, OFFSET nameMsg
-	call writeString
+		; =================================== number of courses ===================================
+			reEnterNumCourses:
 
-	MOV EDX, OFFSET studentName
-	MOV ECX, SIZEOF studentName - 1
-	call readString
+			; prompt for number of courses
+				MOV EDX, OFFSET numberOfCoursesMsg
+				call writeString
 
+			; read number of courses
+				call readInt
 
-	;=========== number of courses (while loop validation) =================
+			; validation:
+				call validateCoursesNum
 
-	reEnterNum:
+				; unvalid:
+				CMP valid, 0
+				JE reEnterNumCourses
 
-	MOV EDX, OFFSET courseNumMsg
-	call writeString
-	call readInt
+		; =================================== course data ===================================
+		MOV ECX, numberOfCourses
+		MOV idx, 0
 
-	; if(num >= 1 && num <= 20)
-	CMP EAX, 1
-	JB invalidNum
-	CMP EAX, 20
-	JA invalidNum
+		courseLoop:
+			
+			; write "Course X: "
+				MOV EDX, OFFSET currentTitle1
+				call writeString
 
-	; valid
-	MOV N, EAX
-	JMP validNum
+				inc idx ; to make it one based
+				MOV EAX, idx
+				call writeDec
+				dec idx ; to return to original
 
-	invalidNum:
-	MOV EDX, OFFSET courseNumErr
-	call writeString
-	call Crlf 
-	JMP reEnterNum
+				MOV EDX, OFFSET currentTitle2
+				call writeString
+				call crlf
 
-	validNum:
+			; read input + validation
+				MOV tempECX, ECX ; save loop counter
+				call getCourseData
+				MOV ECX, tempECX ; restore loop counter
 
-	;======================== courses input loop ======================
-	MOV ECX, N
-	MOV ESI, 0
+			inc idx
 
-	loopCourses:
-		MOV curIdx, ESI
-
-		;call readCourseCode
-		;call readGrade
-		;call readHrs
-		;call decideLetters
-
-		inc ESI
-		call Crlf
-
-	LOOP loopCourses
+		LOOP courseLoop
 
 
-	;======================== output title =============================
-
-	MOV EDX, OFFSET systemTitle1
-	call writeString
-	call Crlf
-	MOV EDX, OFFSET systemTitle2
-	call writeString
-	call Crlf
-	MOV EDX, OFFSET systemTitle3
-	call writeString
-	call Crlf
-
-	;======================== process ldk fkdmfkda =============================
-
-
-
-	exit
-main ENDP
+		exit
+	main ENDP
 
 ; PROCEDURES
 
-;======================== course code =============================
-readCourseCode PROC,
-	reEnterCode:
-
-	; prompt for course code
-		MOV EDX, OFFSET courseCodeMsg
+; =================================== get student info ===================================
+	getStudentInfo PROC
+		; prompt for name
+		MOV EDX, OFFSET studentMsg
 		call writeString
 
-	; save ecx for loop in main
-		MOV savedECX, ECX
-
-	; read course code
-		MOV ECX, SIZEOF courseCode - 1
-		MOV EDX, OFFSET courseCode
+		; read name
+		MOV EDX, OFFSET studentName
+		MOV ECX, SIZEOF studentName - 1
 		call readString
-		MOV courseCodeLen, EAX ; length of input 
 
-	; restore ecx
-		MOV ECX, savedECX
+		ret
+	getStudentInfo ENDP
 
-	; if(length == 5) -> validCode
-		MOV EAX, courseCodeLen
-		CMP EAX, 5
-		JE validCode
+; =================================== course number validation ===================================
+	validateCoursesNum PROC
+		; if(num >= 1 && num <= 20) -> valid
+			CMP EAX, 1
+			JB invalidNumCourses
+			CMP EAX, 20
+			JA invalidNumCourses
 
-	; invalid
-		MOV EDX, OFFSET courseCodeErr
-		call writeString
-		call Crlf 
-		JMP reEnterCode
+		JMP validNumCourses
 
-	validCode:
-		;MOV [courseCodes + curIdx * (5 + 1)], courseCode	
+		invalidNumCourses:
+			MOV EDX, OFFSET numberOfCoursesErr
+			call writeString
+			call crlf
 
-ret
-readCourseCode ENDP
+			; set valid = 0 to re enter in main
+			MOV AL, 0
+			MOV valid, AL
 
-;======================== read grade =============================
-readGrade PROC,
-	reEnterGrade:
+			ret
 
-	; prompt for grade and read
-		MOV EDX, OFFSET courseGradeMsg
-		call writeString
-		call readInt
+		validNumCourses:
+			; set valid = 1 to continue in main
+			MOV numberOfCourses, EAX 
+			MOV AL, 1
+			MOV valid, AL
 
-	; if(grade >= 0 && grade <= 100)
-		CMP EAX, 0
-		JB invalidGrade
-		CMP EAX, 100
-		JA invalidGrade
+			ret
+	validateCoursesNum ENDP
 
-	; valid
-		MOV courseGrade, EAX
-		JMP validGrade
+; =================================== get course data ===================================
+	getCourseData PROC
+		
+		; course code
+			reEnterCourseCode:
 
-	invalidGrade:
-		MOV EDX, OFFSET courseGradeErr
-		call writeString
-		call Crlf
-		JMP reEnterGrade
+			; prompt for course code
+				MOV EDX, OFFSET courseCodeMsg
+				call writeString
 
-	validGrade:
-		;MOV [courseGrades + curIdx * 4], courseGrade
+			; read course code
+				MOV EDX, OFFSET courseCodeBuffer
+				MOV ECX, SIZEOF courseCodeBuffer - 1
+				call readString
 
-ret
-readGrade ENDP
+			; validation:
+				; if(length == 5) -> valid
+				CMP EAX, 5 ; eax has length from readString
+				JE validCourseCode
 
-;======================== read hours =============================
-readHrs PROC,
-	reEnterHrs:
+				; invalid:
+				MOV EDX, OFFSET courseCodeErr
+				call writeString
+				call crlf
+				JMP reEnterCourseCode ; re enter
 
-	; prompt for hours and read
-		MOV EDX, OFFSET courseHrsMsg
-		call writeString
-		call readInt
+				; valid + storing
+				validCourseCode:
+				MOV EDX, OFFSET courseCodeBuffer
+				MOV [courseCodeArr + idx * 6], EDX
 
-	; if(hrs >= 1 && hrs <= 4)
-		CMP EAX, 1
-		JB invalidHrs
-		CMP EAX, 4	
-		JA invalidHrs
+		; course grade
+			reEnterCourseGrade:
 
-	; valid
-		MOV courseHrs, EAX
-		;MOV [courseHrsArr + curIdx * 4], courseHrs
-		JMP validHrs
+			; prompt for course grade
+				MOV EDX, OFFSET courseGradeMsg
+				call writeString
 
-	invalidHrs:
-		MOV EDX, OFFSET courseHrsErr
-		call writeString
-		call Crlf
-		JMP reEnterHrs
+			; read course grade
+				call readInt
+				MOV courseGrade, EAX
 
-	validHrs:	
+			; validation:
+				; if(grade >= 0 && grade <= 100) -> valid
+				CMP courseGrade, 0
+				JB invalidCourseGrade
+				CMP courseGrade, 100
+				JA invalidCourseGrade
 
-ret
-readHrs ENDP
+				; valid
+				JMP validCourseGrade
 
-;======================== assign letters and points =============================
-decideLetters PROC,
+				invalidCourseGrade:
+					MOV EDX, OFFSET courseGradeErr
+					call writeString
+					call crlf
+					JMP reEnterCourseGrade ; re enter
 
-	MOV EBX, [courseGrades + curIdx * 4]
-	; if(grade >= 90) -> A
-	; if(grade >= 80 && grade < 90) -> B
-	; if(grade >= 70 && grade < 80) -> C
-	; if(grade >= 60 && grade < 70) -> D
-	; if(grade < 60) -> F
+				; valid + storing
+				validCourseGrade:
+				MOV EDX, courseGrade
+				MOV [courseGradeArr + idx * 4], EDX
 
-	; try A:
-	CMP EBX, 90
-	JB checkB
-	MOV AL, 'A'
-	MOV [gradePoints + curIdx * 4], 4.0
-	JMP storeLetter
+		; course hours
+			reEnterCourseHrs:
 
-	; try B:
-	checkB:
-	CMP EBX, 80
-	JB checkC
-	MOV AL, 'B'
-	MOV [gradePoints + curIdx * 4], 3.0
-	JMP storeLetter
+			; prompt for course hours
+				MOV EDX, OFFSET courseHrsMsg
+				call writeString
 
-	; try C:
-	checkC:
-	CMP EBX, 70
-	JB checkD
-	MOV AL, 'C'
-	MOV [gradePoints + curIdx * 4], 2.0
-	JMP storeLetter
+			; read course hours
+				call readInt
+				MOV courseHrs, EAX
 
-	; try D:
-	checkD:
-	CMP EBX, 60
-	JB storeF
-	MOV AL, 'D'
-	MOV [gradePoints + curIdx * 4], 1.0
-	JMP storeLetter
+			; validation:
+				; if(hours >= 1 && hours <= 4) -> valid
+				CMP courseHrs, 1
+				JB invalidCourseHrs
+				CMP courseHrs, 4
+				JA invalidCourseHrs
 
-	; store F:
-	storeF:
-	MOV [gradePoints + curIdx * 4], 0.0
-	MOV AL, 'F'
+				; valid
+				JMP validCourseHrs
 
-	storeLetter:
-	MOV [gradeLetters + curIdx * 4], AL
+				invalidCourseHrs:
+					MOV EDX, OFFSET courseHrsErr
+					call writeString
+					call crlf
+					JMP reEnterCourseHrs ; re enter
 
-ret
-decideLetters ENDP
+				; valid + storing
+				validCourseHrs:
+				MOV EDX, courseHrs
+				MOV [courseHrsArr + idx * 4], EDX
 
-;======================== assign letters =============================
-	
-
+		ret
+	getCourseData ENDP
 
 END main
