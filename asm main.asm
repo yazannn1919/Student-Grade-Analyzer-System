@@ -43,6 +43,21 @@ INCLUDE Irvine32.inc
 	countF DWORD 0
 	coursePoints DWORD 20 DUP(?)
 
+	; =================================== calc min, max, sum, avg ===================================
+	minGrade DWORD 100
+	maxGrade DWORD 0
+	gradesSum DWORD 0
+	gradeAvg DWORD ?
+
+	; =================================== calc GPA ===================================
+	gpa DWORD ?
+	pointsSum DWORD 0
+	gpaResult BYTE 20 DUP(0)
+	excellentMsg BYTE "Excellent", 0
+	goodMsg BYTE "Good Standing", 0
+	warningMsg BYTE "Academic Warning", 0
+	probationMsg BYTE "Academic Probation", 0	
+	
 
 .code
 ; MAIN
@@ -68,6 +83,7 @@ INCLUDE Irvine32.inc
 				JE reEnterNumCourses
 
 		; =================================== course data ===================================
+
 			MOV ECX, numberOfCourses
 			MOV idx, 0
 
@@ -96,7 +112,44 @@ INCLUDE Irvine32.inc
 
 			LOOP courseLoop
 
+		; =================================== calc min, max, sum, avg ===================================
+			
+			MOV ECX, numberOfCourses
+			MOV idx, 0
+			calcLoop:
+				; get current grade
+					MOV EAX, [courseGradeArr + idx * 4]
 
+				; calc min
+					; if(curr < min) min = curr
+						CMP EAX, minGrade
+						JAE skipMin
+						MOV minGrade, EAX
+				skipMin:
+
+				; calc max
+					; if(curr > max) max = curr
+						CMP EAX, maxGrade
+						JBE skipMax
+						MOV maxGrade, EAX
+				skipMax:
+
+				; calc sum
+					ADD gradesSum, EAX
+
+				inc idx
+			LOOP calcLoop
+
+			; calc avg
+				MOV EAX, gradesSum
+				MOV EBX, numberOfCourses
+				XOR EDX, EDX ; clear edx before
+				DIV EBX ; eax = eax / ebx
+				MOV gradeAvg, EAX
+
+
+		; =================================== calc GPA ===================================
+			call CalculateGPA
 		exit
 	main ENDP
 
@@ -175,7 +228,7 @@ INCLUDE Irvine32.inc
 				; valid + storing
 				validCourseCode:
 				MOV EDX, OFFSET courseCodeBuffer
-				MOV [courseCodeArr + idx * 6], EDX
+				MOV [courseCodeArr + idx * 6], EDX ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 		; course grade
 			reEnterCourseGrade:
@@ -207,7 +260,7 @@ INCLUDE Irvine32.inc
 				; valid + storing
 				validCourseGrade:
 				MOV EDX, courseGrade
-				MOV [courseGradeArr + idx * 4], EDX
+				MOV [courseGradeArr + idx * 4], EDX ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 		; course hours
 			reEnterCourseHrs:
@@ -239,7 +292,7 @@ INCLUDE Irvine32.inc
 				; valid + storing
 				validCourseHrs:
 				MOV EDX, courseHrs
-				MOV [courseHrsArr + idx * 4], EDX
+				MOV [courseHrsArr + idx * 4], EDX ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 		ret
 	getCourseData ENDP
@@ -253,8 +306,8 @@ INCLUDE Irvine32.inc
 			; store letter A
 				MOV BL, 'A' 
 			; calculate points for A
-				MOV EDX, 4 * courseHrs 
-				MOV [coursePoints + idx * 4], EDX
+				MOV EDX, 4 * courseHrs  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				MOV [coursePoints + idx * 4], EDX ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 			; increment A count
 				inc countA 
 
@@ -267,8 +320,8 @@ INCLUDE Irvine32.inc
 			; store letter B
 				MOV BL, 'B' 
 			; calculate points for B
-				MOV EDX, 3 * courseHrs 
-				MOV [coursePoints + idx * 4], EDX
+				MOV EDX, 3 * courseHrs  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				MOV [coursePoints + idx * 4], EDX ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 			; increment B count
 				inc countB 
 			JMP storeLetter
@@ -280,8 +333,8 @@ INCLUDE Irvine32.inc
 			; store letter C
 				MOV BL, 'C'
 			; calculate points for C
-				MOV EDX, 2 * courseHrs 
-				MOV [coursePoints + idx * 4], EDX
+				MOV EDX, 2 * courseHrs  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				MOV [coursePoints + idx * 4], EDX ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 			; increment C count
 				inc countC
 			JMP storeLetter
@@ -293,8 +346,8 @@ INCLUDE Irvine32.inc
 			; store letter D
 				MOV BL, 'D'
 			; calculate points for D
-				MOV EDX, 1 * courseHrs 
-				MOV [coursePoints + idx * 4], EDX
+				MOV EDX, 1 * courseHrs ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				MOV [coursePoints + idx * 4], EDX ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 			; increment D count
 				inc countD
 			JMP storeLetter
@@ -305,7 +358,7 @@ INCLUDE Irvine32.inc
 				MOV BL, 'F'
 			; calculate points for F
 				MOV EDX, 0
-				MOV [coursePoints + idx * 4], EDX
+				MOV [coursePoints + idx * 4], EDX ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 			; increment F count
 				inc countF
 
@@ -314,5 +367,59 @@ INCLUDE Irvine32.inc
 
 		ret
 	ConvertToLetterGrade ENDP
+
+	; =================================== calc GPA ===================================
+	CalculateGPA PROC
+		MOV ECX, numberOfCourses
+		MOV idx, 0
+
+		calcPointsSumLoop:
+			; get current points
+				MOV EAX, [coursePoints + idx * 4]
+			; calc sum
+				ADD pointsSum, EAX
+			inc idx
+		LOOP calcPointsSumLoop
+
+		; calc GPA
+			MOV EAX, pointsSum
+			MOV EBX, numberOfCourses
+			XOR EDX, EDX ; clear edx before
+			DIV EBX ; eax = eax / ebx
+			MOV gpa, EAX
+
+		; decide gpa result
+			; if(gpa >= 3.5) -> Excellent
+				CMP gpa, 3.5
+				JB checkGood
+				MOV EAX, OFFSET excellentMsg ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				MOV gpaResult, EAX ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				JMP endGPA
+
+			checkGood:
+			; else if(gpa >= 2) -> Good Standing
+				CMP gpa, 2
+				JB warning
+				MOV EAX, OFFSET goodMsg ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				MOV gpaResult, EAX ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				JMP endGPA
+
+			warning:
+			; else if(gpa >= 1.5) -> Academic Warning
+				CMP gpa, 1.5
+				JB probation
+				MOV EAX, OFFSET warningMsg ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				MOV gpaResult, EAX ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				JMP endGPA
+
+			probation:
+			; else -> Academic Probation
+				MOV EAX, OFFSET probationMsg ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				MOV gpaResult, EAX ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+			endGPA:
+				
+		ret
+	CalculateGPA ENDP
 
 END main
