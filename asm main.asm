@@ -57,6 +57,21 @@ INCLUDE Irvine32.inc
 	goodMsg BYTE "Good Standing", 0
 	warningMsg BYTE "Academic Warning", 0
 	probationMsg BYTE "Academic Probation", 0	
+
+	; =================================== display report ===================================
+	reportTitle1 BYTE "===========================================", 0
+	reportTitle2 BYTE "       STUDENT GRADE ANALYZER SYSTEM        ", 0
+	reportTitle3 BYTE "===========================================", 0
+	giveName BYTE "Student: ", 0
+	giveCoursesNum BYTE "Courses: ", 0
+	giveTCredits BYTE "Total Credits: ", 0
+	giveGPA BYTE "GPA: ", 0
+	courseTitle BYTE "Course   ", 0
+	gradeTitle BYTE "Grade   ", 0
+	creditsTitle BYTE "Credits  ", 0
+	lettersTitle BYTE "Letter   ", 0
+	pointsTitle BYTE "Points", 0
+	titlesSeperator BTYE "==========================================", 0
 	
 
 .code
@@ -150,10 +165,36 @@ INCLUDE Irvine32.inc
 
 		; =================================== calc GPA ===================================
 			call CalculateGPA
+
+		; =================================== report printing ===================================
+			call DisplayReport
+			call DisplayStatistics
+			call DisplayHistogram
+
 		exit
 	main ENDP
 
 ; PROCEDURES
+
+; =================================== display report ===================================
+	DisplayReport PROC
+		; displaying header
+			MOV EDX, OFFSET reportTitle1
+			call writeString
+			call crlf
+			MOV EDX, OFFSET reportTitle2
+			call writeString
+			call crlf
+			MOV EDX, OFFSET reportTitle2
+			call writeString
+			call crlf
+			call crlf
+
+		; basic student info
+		
+		
+		ret
+	ENDP DisplayReport
 
 ; =================================== get student info ===================================
 	getStudentInfo PROC
@@ -210,8 +251,8 @@ INCLUDE Irvine32.inc
 				call writeString
 
 			; read course code
-				MOV EDX, OFFSET courseCodeBuffer
-				MOV ECX, SIZEOF courseCodeBuffer - 1
+				MOV EDX, OFFSET courseCodeArr
+				MOV ECX, 6
 				call readString
 
 			; validation:
@@ -226,9 +267,7 @@ INCLUDE Irvine32.inc
 				JMP reEnterCourseCode ; re enter
 
 				; valid + storing
-				validCourseCode:
-				MOV EDX, OFFSET courseCodeBuffer
-				MOV [courseCodeArr + idx * 6], EDX ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				validCourseCode: ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 		; course grade
 			reEnterCourseGrade:
