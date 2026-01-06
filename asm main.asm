@@ -66,12 +66,8 @@ INCLUDE Irvine32.inc
 	giveCoursesNum BYTE "Courses: ", 0
 	giveTCredits BYTE "Total Credits: ", 0
 	giveGPA BYTE "GPA: ", 0
-	courseTitle BYTE "Course   ", 0
-	gradeTitle BYTE "Grade   ", 0
-	creditsTitle BYTE "Credits  ", 0
-	lettersTitle BYTE "Letter   ", 0
-	pointsTitle BYTE "Points", 0
-	titlesSeperator BYTE "======   =====   =======   ======   ======", 0
+	courseTitle BYTE "Course Grade Credits Letter Points", 0
+	titlesSeperator BYTE "------ ----- ------- ------ ------",0
 	printSpace BYTE "   ", 0
 
 	; =================================== statistics report ===================================
@@ -80,7 +76,9 @@ INCLUDE Irvine32.inc
 	lowestGradeMsg BYTE "Lowest Grade: ", 0
 	avgGradeMsg BYTE "Average Grade: ", 0
 	failingMsg BYTE "Failing Courses: ", 0
-	statisticsTitle2 BYTE "GRADE DISTRIBUTION:", 0
+
+	; =================================== histogram report ===================================
+	histogramTitle BYTE "GRADE DISTRIBUTION:", 0
 	gradeAMsg BYTE "A: ", 0
 	gradeBMsg BYTE "B: ", 0
 	gradeCMsg BYTE "C: ", 0
@@ -90,7 +88,7 @@ INCLUDE Irvine32.inc
 	lParen BYTE '(',0
 	rParen BYTE ')',0
 	standingMsg BYTE "ACADEMIC STANDING: ", 0
-	endingLine BYTE "===========================================", 0
+	endingLine BYTE "-------------------------------------------",0
 	
 
 .code
@@ -144,6 +142,8 @@ INCLUDE Irvine32.inc
 				inc idx
 
 			LOOP courseLoop
+			call crlf
+			call crlf
 
 		; =================================== calc min, max, sum, avg ===================================
 			
@@ -252,14 +252,14 @@ INCLUDE Irvine32.inc
 			call writeDec
 
 			; print '.'
-			MOV DL, '.'
+			MOV AL, '.'
 			call writeChar
 
 			; print decimals (ensure leading zero)
 			MOV EAX, gpaDec
 			CMP EAX, 10
 			JAE printDec
-				MOV DL, '0'
+				MOV AL, '0'
 				call writeChar
 			printDec:
 			call writeDec
@@ -270,14 +270,6 @@ INCLUDE Irvine32.inc
 		; table:
 			; courses titles
 				MOV EDX, OFFSET courseTitle
-				call writeString
-				MOV EDX, OFFSET gradeTitle
-				call writeString
-				MOV EDX, OFFSET creditsTitle
-				call writeString
-				MOV EDX, OFFSET lettersTitle
-				call writeString
-				MOV EDX, OFFSET pointsTitle
 				call writeString
 				call crlf
 				MOV EDX, OFFSET titlesSeperator
@@ -291,8 +283,6 @@ INCLUDE Irvine32.inc
 					MOV ESI, idx
 
 					; course code
-						MOV EDX, OFFSET printSpace
-						call writeString
 						MOV EDX, OFFSET courseCodeArr
 						MOV EAX, idx
 						IMUL EAX, EAX, 6
@@ -315,7 +305,6 @@ INCLUDE Irvine32.inc
 						MOV EDX, OFFSET printSpace
 						call writeString
 						MOV AL, [letteredGrades + ESI]
-						MOV DL, AL
 						call writeChar
 
 					; course points
@@ -353,13 +342,13 @@ INCLUDE Irvine32.inc
 				call writeString
 				MOV EAX, maxGrade
 				call writeDec
-				MOV DL, ' '
+				MOV AL, ' '
 				call writeChar
-				MOV DL, '('
+				MOV AL, '('
 				call writeChar
-				MOV DL, maxLetter
+				MOV AL, maxLetter
 				call writeChar
-				MOV DL, ')'
+				MOV AL, ')'
 				call writeChar
 				call crlf
 
@@ -368,13 +357,13 @@ INCLUDE Irvine32.inc
 				call writeString
 				MOV EAX, minGrade
 				call writeDec
-				MOV DL, ' '
+				MOV AL, ' '
 				call writeChar
-				MOV DL, '('
+				MOV AL, '('
 				call writeChar
-				MOV DL, minLetter
+				MOV AL, minLetter
 				call writeChar
-				MOV DL, ')'
+				MOV AL, ')'
 				call writeChar
 				call crlf
 
@@ -383,7 +372,48 @@ INCLUDE Irvine32.inc
 				call writeString
 				MOV EAX, gradeAvg
 				call writeDec
-				call crlf
+
+			; print avg letter grade
+			; print space + '('
+				MOV AL, ' '
+				call WriteChar
+				MOV AL, '('
+				call WriteChar
+
+				; determine avg letter from EAX (gradeAvg)
+				MOV EAX, gradeAvg
+
+				CMP EAX, 90
+				JB  avgCheckB
+				MOV AL, 'A'
+				JMP avgPrint
+
+			avgCheckB:
+				CMP EAX, 80
+				JB  avgCheckC
+				MOV AL, 'B'
+				JMP avgPrint
+
+			avgCheckC:
+				CMP EAX, 70
+				JB  avgCheckD
+				MOV AL, 'C'
+				JMP avgPrint
+
+			avgCheckD:
+				CMP EAX, 60
+				JB  avgIsF
+				MOV AL, 'D'
+				JMP avgPrint
+
+			avgIsF:
+				MOV AL, 'F'
+
+			avgPrint:
+				call WriteChar
+				MOV AL, ')'
+				call WriteChar
+				call Crlf
 
 			; failing courses
 				MOV EDX, OFFSET failingMsg
@@ -392,61 +422,6 @@ INCLUDE Irvine32.inc
 				call writeDec
 				call crlf
 				call crlf
-
-		; DISTRIBUTION
-			; statistics title
-				MOV EDX, OFFSET statisticsTitle2
-				call writeString
-				call crlf
-
-			; grade A
-				MOV EDX, OFFSET gradeAMsg
-				call writeString
-				MOV EAX, countA
-				call writeDec
-				call crlf
-
-			; grade B
-				MOV EDX, OFFSET gradeBMsg
-				call writeString
-				MOV EAX, countB
-				call writeDec
-				call crlf
-
-			; grade C
-				MOV EDX, OFFSET gradeCMsg
-				call writeString
-				MOV EAX, countC
-				call writeDec
-				call crlf
-
-			; grade D
-				MOV EDX, OFFSET gradeDMsg
-				call writeString
-				MOV EAX, countD
-				call writeDec
-				call crlf
-
-			; grade F
-				MOV EDX, OFFSET gradeFMsg
-				call writeString
-				MOV EAX, countF
-				call writeDec
-				call crlf
-				call crlf
-
-		; ACADEMIC STANDING
-			MOV EDX, OFFSET standingMsg
-			call writeString
-			MOV EDX, gpaResult
-			call writeString
-			call crlf
-			call crlf
-
-		; ending line
-			MOV EDX, OFFSET endingLine
-			call writeString
-			call crlf
 
 	ret
 	DisplayStatistics ENDP 
@@ -509,14 +484,14 @@ INCLUDE Irvine32.inc
 				call writeString
 
 			; read course code
+				MOV ESI, idx
+
 				MOV EDX, OFFSET courseCodeArr
-				MOV EAX, idx
-				MOV ECX, 6
-				; EDX = base + idx*6
-				MOV EBX, 6
-				MUL EBX ; eax = idx*6
-				ADD EDX, EAX
-				call ReadString ; eax = length
+				IMUL ESI, ESI, 6        ; ESI = idx*6
+				ADD EDX, ESI            ; EDX = courseCodeArr[idx*6]
+
+				MOV ECX, 6              ; max chars (buffer is 6 bytes: 5 + null)
+				call ReadString         ; EAX = length
 
 			; validation:
 				; if(length == 5) -> valid
@@ -601,6 +576,7 @@ INCLUDE Irvine32.inc
 
 	ConvertToLetterGrade PROC
 		push EBX ; to preserve EBX used for points calculation
+		push EDX
 
 		; get current grade and course hours
 			MOV ESI, idx
@@ -612,7 +588,7 @@ INCLUDE Irvine32.inc
 			JB checkB
 
 			; store letter A
-				MOV BL, 'A' 
+				MOV DL, 'A' 
 			; calculate points for A
 				MOV EBX, 4
 			; increment A count
@@ -626,7 +602,7 @@ INCLUDE Irvine32.inc
 			JB checkC
 
 			; store letter B
-				MOV BL, 'B' 
+				MOV DL, 'B' 
 			; calculate points for B
 				MOV EBX, 3 
 			; increment B count
@@ -640,7 +616,7 @@ INCLUDE Irvine32.inc
 			JB checkD
 
 			; store letter C
-				MOV BL, 'C'
+				MOV DL, 'C'
 			; calculate points for C
 				MOV EBX, 2
 			; increment C count
@@ -654,7 +630,7 @@ INCLUDE Irvine32.inc
 			JB storeF
 
 			; store letter D
-				MOV BL, 'D'
+				MOV DL, 'D'
 			; calculate points for D
 				MOV EBX, 1
 			; increment D count
@@ -666,20 +642,25 @@ INCLUDE Irvine32.inc
 		; else -> F
 
 			; store letter F
-				MOV BL, 'F'
+				MOV DL, 'F'
 			; calculate points for F
 				MOV EBX, 0
 			; increment F count
 				inc countF
 
 		storeLetter:
-				
-			MOV EAX, EBX ; eax = points
-			MUL ECX ; points * course hours (eax * ecx)
+			; store letter into array
+			MOV ESI, idx
+			MOV [letteredGrades + ESI], DL
+
+			; calc points = points * hrs
+			MOV EAX, EBX
+			MUL ECX
 			MOV ESI, idx
 			MOV [coursePoints + ESI * 4], EAX
 
 		pop EBX ; restore EBX
+		pop EDX
 		ret
 	ConvertToLetterGrade ENDP
 
@@ -768,6 +749,11 @@ INCLUDE Irvine32.inc
 			push EBX
 			push ECX
 
+			; title
+				MOV EDX, OFFSET histogramTitle   ; "GRADE DISTRIBUTION:"
+				call WriteString
+				call Crlf
+
 		; A
 			MOV EDX, OFFSET gradeAMsg
 			call writeString
@@ -776,19 +762,19 @@ INCLUDE Irvine32.inc
 			starLoopA:
 				CMP ECX, 0
 				JE endStarA
-				MOV DL, '*'
+				MOV AL, '*'
 				call writeChar
-				DEC ECX
+				dec ECX
 				JMP starLoopA
 			endStarA:
 
-			MOV DL, ' '
+			MOV AL, ' '
 			call writeChar
-			MOV DL, '('
+			MOV AL, '('
 			call writeChar
 			MOV EAX, countA
 			call writeDec
-			MOV DL, ')'
+			MOV AL, ')'
 			call writeChar
 			call crlf
 
@@ -800,19 +786,19 @@ INCLUDE Irvine32.inc
 			starLoopB:
 				CMP ECX, 0
 				JE endStarB
-				MOV DL, '*'
+				MOV AL, '*'
 				call writeChar
 				DEC ECX
 				JMP starLoopB
 			endStarB:
 
-			MOV DL, ' '
+			MOV AL, ' '
 			call writeChar
-			MOV DL, '('
+			MOV AL, '('
 			call writeChar
 			MOV EAX, countB
 			call writeDec
-			MOV DL, ')'
+			MOV AL, ')'
 			call writeChar
 			call crlf
 
@@ -824,19 +810,19 @@ INCLUDE Irvine32.inc
 			starLoopC:
 				CMP ECX, 0
 				JE endStarC
-				MOV DL, '*'
+				MOV AL, '*'
 				call writeChar
 				DEC ECX
 				JMP starLoopC
 			endStarC:
 
-			MOV DL, ' '
+			MOV AL, ' '
 			call writeChar
-			MOV DL, '('
+			MOV AL, '('
 			call writeChar
 			MOV EAX, countC
 			call writeDec
-			MOV DL, ')'
+			MOV AL, ')'
 			call writeChar
 			call crlf
 
@@ -848,19 +834,19 @@ INCLUDE Irvine32.inc
 			starLoopD:
 				CMP ECX, 0
 				JE endStarD
-				MOV DL, '*'
+				MOV AL, '*'
 				call writeChar
 				DEC ECX
 				JMP starLoopD
 			endStarD:
 
-			MOV DL, ' '
+			MOV AL, ' '
 			call writeChar
-			MOV DL, '('
+			MOV AL, '('
 			call writeChar
 			MOV EAX, countD
 			call writeDec
-			MOV DL, ')'
+			MOV AL, ')'
 			call writeChar
 			call crlf
 
@@ -872,26 +858,39 @@ INCLUDE Irvine32.inc
 			starLoopF:
 				CMP ECX, 0
 				JE endStarF
-				MOV DL, '*'
+				MOV AL, '*'
 				call writeChar
 				DEC ECX
 				JMP starLoopF
 			endStarF:
 
-			MOV DL, ' '
+			MOV AL, ' '
 			call writeChar
-			MOV DL, '('
+			MOV AL, '('
 			call writeChar
 			MOV EAX, countF
 			call writeDec
-			MOV DL, ')'
+			MOV AL, ')'
 			call writeChar
 			call crlf
+			call crlf
+
+			; ACADEMIC STANDING
+				MOV EDX, OFFSET standingMsg
+				call writeString
+				MOV EDX, gpaResult
+				call writeString
+				call crlf
+				call crlf
+
+			; printing ending line
+				MOV EDX, OFFSET endingLine
+				call writeString
+				call crlf
 
 			pop ecx
 			pop ebx
 			ret
 	DisplayHistogram ENDP
-
 
 END main
