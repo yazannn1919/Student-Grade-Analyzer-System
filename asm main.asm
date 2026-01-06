@@ -20,17 +20,13 @@ INCLUDE Irvine32.inc
 
 	courseCodeMsg BYTE "  Enter course code: ", 0
 	courseCodeErr BYTE "  Course code must be 5 characters", 0
-	courseCodeBuffer BYTE 21 DUP(0) ; +1 for null terminator, extra size to avoid overflow
-	courseCodeLen DWORD ?
-	courseCodeArr BYTE 20 DUP(6 DUP(0)) ; array for max 20 course codes including null terminators
+	courseCodeArr BYTE 120 DUP(0) ; array for max 20 course codes including null terminators
 
 	courseGradeMsg BYTE "  Enter course grade (0-100): ", 0
-	courseGrade DWORD ?
 	courseGradeErr BYTE "  Grade must be between 0 and 100", 0
 	courseGradeArr DWORD 20 DUP(?) 
 
 	courseHrsMsg BYTE "  Enter course hours (1-4): ", 0
-	courseHrs DWORD ?
 	courseHrsErr BYTE "  Course hours must be between 1 and 4", 0
 	courseHrsArr DWORD 20 DUP(?)
 
@@ -46,13 +42,17 @@ INCLUDE Irvine32.inc
 	; =================================== calc min, max, sum, avg ===================================
 	minGrade DWORD 100
 	maxGrade DWORD 0
+	minLetter BYTE ?
+	maxLetter BYTE ?
 	gradesSum DWORD 0
-	gradeAvg DWORD ?
+	hrsSum DWORD 0
+	gradeAvg DWORD 0
 
 	; =================================== calc GPA ===================================
-	gpa DWORD ?
+	gpaInt DWORD ?
+	gpaDec DWORD ?
+	gpaResult DWORD ?
 	pointsSum DWORD 0
-	gpaResult BYTE 20 DUP(0)
 	excellentMsg BYTE "Excellent", 0
 	goodMsg BYTE "Good Standing", 0
 	warningMsg BYTE "Academic Warning", 0
@@ -71,7 +71,26 @@ INCLUDE Irvine32.inc
 	creditsTitle BYTE "Credits  ", 0
 	lettersTitle BYTE "Letter   ", 0
 	pointsTitle BYTE "Points", 0
-	titlesSeperator BTYE "==========================================", 0
+	titlesSeperator BYTE "======   =====   =======   ======   ======", 0
+	printSpace BYTE "   ", 0
+
+	; =================================== statistics report ===================================
+	statisticsTitle1 BYTE "STATISTICAL SUMMARY", 0
+	highestGradeMsg BYTE "Highest Grade: ", 0
+	lowestGradeMsg BYTE "Lowest Grade: ", 0
+	avgGradeMsg BYTE "Average Grade: ", 0
+	failingMsg BYTE "Failing Courses: ", 0
+	statisticsTitle2 BYTE "GRADE DISTRIBUTION:", 0
+	gradeAMsg BYTE "A: ", 0
+	gradeBMsg BYTE "B: ", 0
+	gradeCMsg BYTE "C: ", 0
+	gradeDMsg BYTE "D: ", 0
+	gradeFMsg BYTE "F: ", 0
+	star BYTE '*',0
+	lParen BYTE '(',0
+	rParen BYTE ')',0
+	standingMsg BYTE "ACADEMIC STANDING: ", 0
+	endingLine BYTE "===========================================", 0
 	
 
 .code
@@ -81,7 +100,7 @@ INCLUDE Irvine32.inc
 			call getStudentInfo
 
 		; =================================== number of courses ===================================
-			reEnterNumCourses:
+			reEnterNumCourses: MOV valid, 0 ; reset valid flag
 
 			; prompt for number of courses
 				MOV EDX, OFFSET numberOfCoursesMsg
@@ -108,10 +127,9 @@ INCLUDE Irvine32.inc
 					MOV EDX, OFFSET currentTitle1
 					call writeString
 
-					inc idx ; to make it one based
 					MOV EAX, idx
+					inc EAX ; to make it 1 based
 					call writeDec
-					dec idx ; to return to original
 
 					MOV EDX, OFFSET currentTitle2
 					call writeString
@@ -131,15 +149,22 @@ INCLUDE Irvine32.inc
 			
 			MOV ECX, numberOfCourses
 			MOV idx, 0
+
 			calcLoop:
-				; get current grade
-					MOV EAX, [courseGradeArr + idx * 4]
+				; get current grade	
+					MOV ESI, idx
+					MOV EAX, [courseGradeArr + ESI * 4]
+
+				; get curr letter
+					MOV ESI, idx
+					MOV DL,  [letteredGrades + ESI]
 
 				; calc min
 					; if(curr < min) min = curr
 						CMP EAX, minGrade
 						JAE skipMin
 						MOV minGrade, EAX
+						MOV minLetter, DL
 				skipMin:
 
 				; calc max
@@ -147,10 +172,14 @@ INCLUDE Irvine32.inc
 						CMP EAX, maxGrade
 						JBE skipMax
 						MOV maxGrade, EAX
+						MOV maxLetter, DL
 				skipMax:
 
 				; calc sum
 					ADD gradesSum, EAX
+					MOV ESI, idx
+					MOV EAX, [courseHrsArr + ESI * 4]
+					ADD hrsSum, EAX
 
 				inc idx
 			LOOP calcLoop
@@ -158,8 +187,8 @@ INCLUDE Irvine32.inc
 			; calc avg
 				MOV EAX, gradesSum
 				MOV EBX, numberOfCourses
-				XOR EDX, EDX ; clear edx before
-				DIV EBX ; eax = eax / ebx
+				XOR EDX, EDX ; clear EDX before
+				DIV EBX ; EAX = EAX / EBX
 				MOV gradeAvg, EAX
 
 
@@ -178,6 +207,8 @@ INCLUDE Irvine32.inc
 
 ; =================================== display report ===================================
 	DisplayReport PROC
+		push EBX
+
 		; displaying header
 			MOV EDX, OFFSET reportTitle1
 			call writeString
@@ -185,16 +216,241 @@ INCLUDE Irvine32.inc
 			MOV EDX, OFFSET reportTitle2
 			call writeString
 			call crlf
-			MOV EDX, OFFSET reportTitle2
+			MOV EDX, OFFSET reportTitle3
 			call writeString
 			call crlf
 			call crlf
 
 		; basic student info
+			; student name:
+			MOV EDX, OFFSET giveName
+			call writeString
+			MOV EDX, OFFSET studentName
+			call writeString
+			call crlf
+
+			; number of courses:
+			MOV EDX, OFFSET giveCoursesNum
+			call writeString
+			MOV EAX, numberOfCourses
+			call writeDec
+			call crlf
+
+			; total credits:
+			MOV EDX, OFFSET giveTCredits
+			call writeString
+			MOV EAX, hrsSum
+			call writeDec
+			call crlf
+
+			; GPA with 2 decimal places (manual)
+			MOV EDX, OFFSET giveGPA
+			call writeString
+
+			; integer part
+			MOV EAX, gpaInt
+			call writeDec
+
+			; print '.'
+			MOV DL, '.'
+			call writeChar
+
+			; print decimals (ensure leading zero)
+			MOV EAX, gpaDec
+			CMP EAX, 10
+			JAE printDec
+				MOV DL, '0'
+				call writeChar
+			printDec:
+			call writeDec
+
+			call crlf
+			call crlf
+
+		; table:
+			; courses titles
+				MOV EDX, OFFSET courseTitle
+				call writeString
+				MOV EDX, OFFSET gradeTitle
+				call writeString
+				MOV EDX, OFFSET creditsTitle
+				call writeString
+				MOV EDX, OFFSET lettersTitle
+				call writeString
+				MOV EDX, OFFSET pointsTitle
+				call writeString
+				call crlf
+				MOV EDX, OFFSET titlesSeperator
+				call writeString
+				call crlf
+
+			; courses info (name, grade, credits, letters, points) 
+				MOV ECX, numberOfCourses
+				MOV idx, 0
+				courseReportLoop:
+					MOV ESI, idx
+
+					; course code
+						MOV EDX, OFFSET printSpace
+						call writeString
+						MOV EDX, OFFSET courseCodeArr
+						MOV EAX, idx
+						IMUL EAX, EAX, 6
+						ADD EDX, EAX
+						call writeString
+
+					; course grade
+						MOV EDX, OFFSET printSpace
+						call writeString
+						MOV EAX, [courseGradeArr + ESI * 4]
+						call writeDec
+
+					; course hours
+						MOV EDX, OFFSET printSpace
+						call writeString
+						MOV EAX, [courseHrsArr + ESI * 4]
+						call writeDec
+
+					; lettered grade
+						MOV EDX, OFFSET printSpace
+						call writeString
+						MOV AL, [letteredGrades + ESI]
+						MOV DL, AL
+						call writeChar
+
+					; course points
+						MOV EDX, OFFSET printSpace
+						call writeString
+						MOV EAX, [coursePoints + ESI * 4]
+						call writeDec
+
+					call crlf
+					inc idx
+					dec ECX
+				JNZ courseReportLoop ;;;;;;;;;;;;;;
+
+				call crlf
+				; ending line
+					MOV EDX, OFFSET endingLine
+					call writeString
+					call crlf
+					call crlf
 		
-		
+		pop EBX
 		ret
-	ENDP DisplayReport
+	DisplayReport ENDP 
+
+; =================================== display statistics ===================================
+	DisplayStatistics PROC 
+		; SUMMARY
+			; statistics title
+				MOV EDX, OFFSET statisticsTitle1
+				call writeString
+				call crlf
+
+			; highest grade
+				MOV EDX, OFFSET highestGradeMsg
+				call writeString
+				MOV EAX, maxGrade
+				call writeDec
+				MOV DL, ' '
+				call writeChar
+				MOV DL, '('
+				call writeChar
+				MOV DL, maxLetter
+				call writeChar
+				MOV DL, ')'
+				call writeChar
+				call crlf
+
+			; lowest grade
+				MOV EDX, OFFSET lowestGradeMsg
+				call writeString
+				MOV EAX, minGrade
+				call writeDec
+				MOV DL, ' '
+				call writeChar
+				MOV DL, '('
+				call writeChar
+				MOV DL, minLetter
+				call writeChar
+				MOV DL, ')'
+				call writeChar
+				call crlf
+
+			; average grade
+				MOV EDX, OFFSET avgGradeMsg
+				call writeString
+				MOV EAX, gradeAvg
+				call writeDec
+				call crlf
+
+			; failing courses
+				MOV EDX, OFFSET failingMsg
+				call writeString
+				MOV EAX, countF
+				call writeDec
+				call crlf
+				call crlf
+
+		; DISTRIBUTION
+			; statistics title
+				MOV EDX, OFFSET statisticsTitle2
+				call writeString
+				call crlf
+
+			; grade A
+				MOV EDX, OFFSET gradeAMsg
+				call writeString
+				MOV EAX, countA
+				call writeDec
+				call crlf
+
+			; grade B
+				MOV EDX, OFFSET gradeBMsg
+				call writeString
+				MOV EAX, countB
+				call writeDec
+				call crlf
+
+			; grade C
+				MOV EDX, OFFSET gradeCMsg
+				call writeString
+				MOV EAX, countC
+				call writeDec
+				call crlf
+
+			; grade D
+				MOV EDX, OFFSET gradeDMsg
+				call writeString
+				MOV EAX, countD
+				call writeDec
+				call crlf
+
+			; grade F
+				MOV EDX, OFFSET gradeFMsg
+				call writeString
+				MOV EAX, countF
+				call writeDec
+				call crlf
+				call crlf
+
+		; ACADEMIC STANDING
+			MOV EDX, OFFSET standingMsg
+			call writeString
+			MOV EDX, gpaResult
+			call writeString
+			call crlf
+			call crlf
+
+		; ending line
+			MOV EDX, OFFSET endingLine
+			call writeString
+			call crlf
+
+	ret
+	DisplayStatistics ENDP 
+
 
 ; =================================== get student info ===================================
 	getStudentInfo PROC
@@ -212,6 +468,8 @@ INCLUDE Irvine32.inc
 
 ; =================================== course number validation ===================================
 	validateCoursesNum PROC
+		MOV valid, 0
+
 		; if(num >= 1 && num <= 20) -> valid
 			CMP EAX, 1
 			JB invalidNumCourses
@@ -252,8 +510,13 @@ INCLUDE Irvine32.inc
 
 			; read course code
 				MOV EDX, OFFSET courseCodeArr
+				MOV EAX, idx
 				MOV ECX, 6
-				call readString
+				; EDX = base + idx*6
+				MOV EBX, 6
+				MUL EBX ; eax = idx*6
+				ADD EDX, EAX
+				call ReadString ; eax = length
 
 			; validation:
 				; if(length == 5) -> valid
@@ -267,7 +530,7 @@ INCLUDE Irvine32.inc
 				JMP reEnterCourseCode ; re enter
 
 				; valid + storing
-				validCourseCode: ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				validCourseCode: 
 
 		; course grade
 			reEnterCourseGrade:
@@ -278,16 +541,17 @@ INCLUDE Irvine32.inc
 
 			; read course grade
 				call readInt
-				MOV courseGrade, EAX
 
 			; validation:
 				; if(grade >= 0 && grade <= 100) -> valid
-				CMP courseGrade, 0
+				CMP EAX, 0
 				JB invalidCourseGrade
-				CMP courseGrade, 100
+				CMP EAX, 100
 				JA invalidCourseGrade
 
 				; valid
+				MOV ESI, idx
+				MOV [courseGradeArr + ESI * 4], EAX 
 				JMP validCourseGrade
 
 				invalidCourseGrade:
@@ -298,8 +562,7 @@ INCLUDE Irvine32.inc
 
 				; valid + storing
 				validCourseGrade:
-				MOV EDX, courseGrade
-				MOV [courseGradeArr + idx * 4], EDX ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				
 
 		; course hours
 			reEnterCourseHrs:
@@ -310,16 +573,17 @@ INCLUDE Irvine32.inc
 
 			; read course hours
 				call readInt
-				MOV courseHrs, EAX
 
 			; validation:
 				; if(hours >= 1 && hours <= 4) -> valid
-				CMP courseHrs, 1
+				CMP EAX, 1
 				JB invalidCourseHrs
-				CMP courseHrs, 4
+				CMP EAX, 4
 				JA invalidCourseHrs
 
 				; valid
+				MOV ESI, idx
+				MOV [courseHrsArr + ESI * 4], EAX 
 				JMP validCourseHrs
 
 				invalidCourseHrs:
@@ -330,14 +594,19 @@ INCLUDE Irvine32.inc
 
 				; valid + storing
 				validCourseHrs:
-				MOV EDX, courseHrs
-				MOV [courseHrsArr + idx * 4], EDX ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				
 
 		ret
 	getCourseData ENDP
 
 	ConvertToLetterGrade PROC
-		; eax = current grade
+		push EBX ; to preserve EBX used for points calculation
+
+		; get current grade and course hours
+			MOV ESI, idx
+			MOV EAX, [courseGradeArr + ESI * 4] ; grade
+			MOV ECX, [courseHrsArr + ESI * 4] ; hours		
+		
 		; if(grade >= 90) -> A
 			CMP EAX, 90
 			JB checkB
@@ -345,8 +614,7 @@ INCLUDE Irvine32.inc
 			; store letter A
 				MOV BL, 'A' 
 			; calculate points for A
-				MOV EDX, 4 * courseHrs  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-				MOV [coursePoints + idx * 4], EDX ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				MOV EBX, 4
 			; increment A count
 				inc countA 
 
@@ -356,109 +624,274 @@ INCLUDE Irvine32.inc
 		; else if(grade >= 80) -> B
 			CMP EAX, 80
 			JB checkC
+
 			; store letter B
 				MOV BL, 'B' 
 			; calculate points for B
-				MOV EDX, 3 * courseHrs  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-				MOV [coursePoints + idx * 4], EDX ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				MOV EBX, 3 
 			; increment B count
 				inc countB 
+
 			JMP storeLetter
 
 		checkC:
 		; else if(grade >= 70) -> C
 			CMP EAX, 70
 			JB checkD
+
 			; store letter C
 				MOV BL, 'C'
 			; calculate points for C
-				MOV EDX, 2 * courseHrs  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-				MOV [coursePoints + idx * 4], EDX ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				MOV EBX, 2
 			; increment C count
 				inc countC
+
 			JMP storeLetter
 
 		checkD:
 		; else if(grade >= 60) -> D
 			CMP EAX, 60
 			JB storeF
+
 			; store letter D
 				MOV BL, 'D'
 			; calculate points for D
-				MOV EDX, 1 * courseHrs ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-				MOV [coursePoints + idx * 4], EDX ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				MOV EBX, 1
 			; increment D count
 				inc countD
+
 			JMP storeLetter
 
 		storeF:
 		; else -> F
+
 			; store letter F
 				MOV BL, 'F'
 			; calculate points for F
-				MOV EDX, 0
-				MOV [coursePoints + idx * 4], EDX ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				MOV EBX, 0
 			; increment F count
 				inc countF
 
 		storeLetter:
-		MOV [letteredGrades + idx], BL
+				
+			MOV EAX, EBX ; eax = points
+			MUL ECX ; points * course hours (eax * ecx)
+			MOV ESI, idx
+			MOV [coursePoints + ESI * 4], EAX
 
+		pop EBX ; restore EBX
 		ret
 	ConvertToLetterGrade ENDP
 
 	; =================================== calc GPA ===================================
 	CalculateGPA PROC
+		push EBX
+		MOV pointsSum, 0 ; reset sum
+
 		MOV ECX, numberOfCourses
 		MOV idx, 0
 
 		calcPointsSumLoop:
 			; get current points
-				MOV EAX, [coursePoints + idx * 4]
+				MOV ESI, idx
+				MOV EAX, [coursePoints + ESI * 4]
 			; calc sum
 				ADD pointsSum, EAX
 			inc idx
 		LOOP calcPointsSumLoop
 
-		; calc GPA
+		; calc GPA = pointsSum / hrs
 			MOV EAX, pointsSum
-			MOV EBX, numberOfCourses
-			XOR EDX, EDX ; clear edx before
-			DIV EBX ; eax = eax / ebx
-			MOV gpa, EAX
+			MOV EBX, hrsSum
+			XOR EDX, EDX ; clear EDX before
+			DIV EBX ; EAX = EAX / EBX
+			MOV gpaInt, EAX
+
+		; decimals = (remainder * 100) / hrsSum
+			MOV EAX, EDX	 ; remainder
+			MOV EBX, 100
+			MUL EBX ; eax = remainder*100
+			MOV EBX, hrsSum
+			XOR EDX, EDX ; clearing edx
+			DIV EBX ; eax = 2 decimals
+			MOV gpaDec, EAX
 
 		; decide gpa result
 			; if(gpa >= 3.5) -> Excellent
-				CMP gpa, 3.5
-				JB checkGood
-				MOV EAX, OFFSET excellentMsg ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-				MOV gpaResult, EAX ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				CMP gpaInt, 3
+				JB checkGood ; gpaInt < 3 => gpa < 3.5
+				JA setExcellent ; gpaInt > 3 => gpa >= 3.5
+				; gpaInt == 3 -> need decimals >= 50
+                CMP gpaDec, 50
+                JB  checkGood
+
+			setExcellent:
+				MOV EAX, OFFSET excellentMsg 
+				MOV gpaResult, EAX 
 				JMP endGPA
 
 			checkGood:
 			; else if(gpa >= 2) -> Good Standing
-				CMP gpa, 2
+				CMP gpaInt, 2
 				JB warning
-				MOV EAX, OFFSET goodMsg ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-				MOV gpaResult, EAX ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				MOV EAX, OFFSET goodMsg 
+				MOV gpaResult, EAX 
 				JMP endGPA
 
 			warning:
 			; else if(gpa >= 1.5) -> Academic Warning
-				CMP gpa, 1.5
-				JB probation
-				MOV EAX, OFFSET warningMsg ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-				MOV gpaResult, EAX ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				CMP gpaInt, 1
+				JB probation ; 0.xx < 1.5
+				JA setWarning 
+				; gpaInt == 1 -> need decimals >= 50
+                CMP gpaDec, 50
+                JB probation
+
+			setWarning:
+				MOV EAX, OFFSET warningMsg 
+				MOV gpaResult, EAX 
 				JMP endGPA
 
 			probation:
 			; else -> Academic Probation
-				MOV EAX, OFFSET probationMsg ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-				MOV gpaResult, EAX ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				MOV EAX, OFFSET probationMsg 
+				MOV gpaResult, EAX 
 
 			endGPA:
-				
+			pop EBX
 		ret
 	CalculateGPA ENDP
+
+	; =================================== histogram ===================================
+
+	DisplayHistogram PROC
+			push EBX
+			push ECX
+
+		; A
+			MOV EDX, OFFSET gradeAMsg
+			call writeString
+
+			MOV ECX, countA
+			starLoopA:
+				CMP ECX, 0
+				JE endStarA
+				MOV DL, '*'
+				call writeChar
+				DEC ECX
+				JMP starLoopA
+			endStarA:
+
+			MOV DL, ' '
+			call writeChar
+			MOV DL, '('
+			call writeChar
+			MOV EAX, countA
+			call writeDec
+			MOV DL, ')'
+			call writeChar
+			call crlf
+
+		; B
+			MOV EDX, OFFSET gradeBMsg
+			call writeString
+
+			MOV ECX, countB
+			starLoopB:
+				CMP ECX, 0
+				JE endStarB
+				MOV DL, '*'
+				call writeChar
+				DEC ECX
+				JMP starLoopB
+			endStarB:
+
+			MOV DL, ' '
+			call writeChar
+			MOV DL, '('
+			call writeChar
+			MOV EAX, countB
+			call writeDec
+			MOV DL, ')'
+			call writeChar
+			call crlf
+
+		; C
+			MOV EDX, OFFSET gradeCMsg
+			call writeString
+
+			MOV ECX, countC
+			starLoopC:
+				CMP ECX, 0
+				JE endStarC
+				MOV DL, '*'
+				call writeChar
+				DEC ECX
+				JMP starLoopC
+			endStarC:
+
+			MOV DL, ' '
+			call writeChar
+			MOV DL, '('
+			call writeChar
+			MOV EAX, countC
+			call writeDec
+			MOV DL, ')'
+			call writeChar
+			call crlf
+
+		; D
+			MOV EDX, OFFSET gradeDMsg
+			call writeString
+
+			MOV ECX, countD
+			starLoopD:
+				CMP ECX, 0
+				JE endStarD
+				MOV DL, '*'
+				call writeChar
+				DEC ECX
+				JMP starLoopD
+			endStarD:
+
+			MOV DL, ' '
+			call writeChar
+			MOV DL, '('
+			call writeChar
+			MOV EAX, countD
+			call writeDec
+			MOV DL, ')'
+			call writeChar
+			call crlf
+
+		; F
+			MOV EDX, OFFSET gradeFMsg
+			call writeString
+
+			MOV ECX, countF
+			starLoopF:
+				CMP ECX, 0
+				JE endStarF
+				MOV DL, '*'
+				call writeChar
+				DEC ECX
+				JMP starLoopF
+			endStarF:
+
+			MOV DL, ' '
+			call writeChar
+			MOV DL, '('
+			call writeChar
+			MOV EAX, countF
+			call writeDec
+			MOV DL, ')'
+			call writeChar
+			call crlf
+
+			pop ecx
+			pop ebx
+			ret
+	DisplayHistogram ENDP
+
 
 END main
