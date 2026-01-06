@@ -122,22 +122,25 @@ INCLUDE Irvine32.inc
 			courseLoop:
 			
 				; write "Course X: "
+				; "course " 
 					MOV EDX, OFFSET currentTitle1
 					call writeString
 
+				; idx + 1
 					MOV EAX, idx
 					inc EAX ; to make it 1 based
 					call writeDec
 
+				; ": "
 					MOV EDX, OFFSET currentTitle2
 					call writeString
 					call crlf
 
 				; read input + validation
-					MOV tempECX, ECX ; save loop counter
+					push ECX ; save loop counter
 					call getCourseData
 					call ConvertToLetterGrade
-					MOV ECX, tempECX ; restore loop counter
+					pop ECX ; restore loop counter
 
 				inc idx
 
@@ -151,12 +154,11 @@ INCLUDE Irvine32.inc
 			MOV idx, 0
 
 			calcLoop:
+				MOV ESI, idx
 				; get current grade	
-					MOV ESI, idx
 					MOV EAX, [courseGradeArr + ESI * 4]
 
 				; get curr letter
-					MOV ESI, idx
 					MOV DL,  [letteredGrades + ESI]
 
 				; calc min
@@ -486,12 +488,13 @@ INCLUDE Irvine32.inc
 			; read course code
 				MOV ESI, idx
 
+				; made it to point to correct index in array
 				MOV EDX, OFFSET courseCodeArr
-				IMUL ESI, ESI, 6        ; ESI = idx*6
-				ADD EDX, ESI            ; EDX = courseCodeArr[idx*6]
+				IMUL ESI, ESI, 6 ; ESI = idx*6
+				ADD EDX, ESI ; EDX = courseCodeArr[idx*6]
 
-				MOV ECX, 6              ; max chars (buffer is 6 bytes: 5 + null)
-				call ReadString         ; EAX = length
+				MOV ECX, 6 ; max length
+				call ReadString ; EAX = length
 
 			; validation:
 				; if(length == 5) -> valid
@@ -525,7 +528,6 @@ INCLUDE Irvine32.inc
 				JA invalidCourseGrade
 
 				; valid
-				MOV ESI, idx
 				MOV [courseGradeArr + ESI * 4], EAX 
 				JMP validCourseGrade
 
@@ -557,7 +559,6 @@ INCLUDE Irvine32.inc
 				JA invalidCourseHrs
 
 				; valid
-				MOV ESI, idx
 				MOV [courseHrsArr + ESI * 4], EAX 
 				JMP validCourseHrs
 
@@ -650,7 +651,6 @@ INCLUDE Irvine32.inc
 
 		storeLetter:
 			; store letter into array
-			MOV ESI, idx
 			MOV [letteredGrades + ESI], DL
 
 			; calc points = points * hrs
