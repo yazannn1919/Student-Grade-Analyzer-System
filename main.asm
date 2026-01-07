@@ -18,6 +18,7 @@ INCLUDE Irvine32.inc
 	idx DWORD ?
 	tempECX DWORD ?
 
+	courseCodeBuffer BYTE 32 DUP(0)
 	courseCodeMsg BYTE "  Enter course code: ", 0
 	courseCodeErr BYTE "  Course code must be 5 characters", 0
 	courseCodeArr BYTE 120 DUP(0) ; array for max 20 course codes including null terminators
@@ -480,37 +481,51 @@ INCLUDE Irvine32.inc
 		
 		; course code
 			reEnterCourseCode:
-
-			; prompt for course code
+				; prompt
 				MOV EDX, OFFSET courseCodeMsg
-				call writeString
+				call WriteString
 
-			; read course code
-				MOV ESI, idx
-
-				; made it to point to correct index in array
-				MOV EDX, OFFSET courseCodeArr
-				IMUL ESI, ESI, 6 ; ESI = idx*6
-				ADD EDX, ESI ; EDX = courseCodeArr[idx*6]
-
-				MOV ECX, 6 ; max length
+				; read into temp buffer 
+				MOV EDX, OFFSET courseCodeBuffer
+				MOV ECX, SIZEOF courseCodeBuffer
 				call ReadString ; EAX = length
 
-			; validation:
+				; validation
 				; if(length == 5) -> valid
-				CMP EAX, 5 ; eax has length from readString
-				JE validCourseCode
+				CMP EAX, 5
+				JE  validCourseCode
 
-				; invalid:
+				; invalid
 				MOV EDX, OFFSET courseCodeErr
-				call writeString
+				call WriteString
 				call crlf
-				JMP reEnterCourseCode ; re enter
+				JMP reEnterCourseCode
 
-				; valid + storing
-				validCourseCode: 
+			validCourseCode:
+				; storing in array
+				MOV ESI, OFFSET courseCodeBuffer
+
+				MOV EDI, OFFSET courseCodeArr
+				MOV EAX, idx
+				IMUL EAX, EAX, 6
+				ADD EDI, EAX ; EDI -> destination slot
+
+				; copying 5 bytes manually
+				MOV AL, [ESI]
+				MOV [EDI], AL
+				MOV AL, [ESI+1]
+				MOV [EDI+1], AL
+				MOV AL, [ESI+2]
+				MOV [EDI+2], AL
+				MOV AL, [ESI+3]
+				MOV [EDI+3], AL
+				MOV AL, [ESI+4]
+				MOV [EDI+4], AL
+
+				MOV BYTE PTR [EDI+5], 0 ; null terminator
 
 		; course grade
+			MOV ESI, idx ; bc esi was changed in copying
 			reEnterCourseGrade:
 
 			; prompt for course grade
@@ -655,12 +670,13 @@ INCLUDE Irvine32.inc
 
 			; calc points = points * hrs
 			MOV EAX, EBX
+			XOR EDX, EDX ; clear EDX before	
 			MUL ECX
 			MOV ESI, idx
 			MOV [coursePoints + ESI * 4], EAX
 
-		pop EBX ; restore EBX
 		pop EDX
+		pop EBX ; restore EBX
 		ret
 	ConvertToLetterGrade ENDP
 
@@ -894,3 +910,4 @@ INCLUDE Irvine32.inc
 	DisplayHistogram ENDP
 
 END main
+
