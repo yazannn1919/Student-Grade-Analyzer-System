@@ -101,19 +101,4 @@ main ENDP
     L9: ret ; return 
     
   BinarySearch ENDP
-  
-  int BinarySearch(int* arr, int count, int searchVal) {
-    int first = 0, last = count - 1, mid;
-  
-    while (true) {
-      if (first > last) return -1;
-      
-      mid = (first + last) >> 1;
-      int value = arr[mid];
-      
-      if (value < searchVal) first = mid + 1;
-      else if (value > searchVal) last = mid - 1;
-      else return mid;
-    }
-  }
 END main
